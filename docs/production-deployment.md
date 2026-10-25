@@ -24,16 +24,19 @@ The Docker image builds the cohort from the official public source and records s
 - [Main CI run #40199498577](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498577) passed on deployed source commit `154ee80916e1a45080bc4160902516768afaee15`.
 
 
-## PostgreSQL implementation status (feature branch)
+## PostgreSQL implementation status (merged; not deployed)
 
-An opt-in PostgreSQL adapter and migration/recovery tooling are proposed in
-[PR #33](https://github.com/kaustubhdua/GenomeGuard/pull/33). This is **not yet deployed** and does
-not change the active Render service. It includes a schema migration, a one-time offline SQLite
-migration tool, PostgreSQL audit-sequence locking, and backup/restore instructions. It does not
-prove a provider backup policy, perform a real restore drill, or provide atomic transactions spanning
-the complete request/decision/privacy-budget/audit lifecycle. Do not describe the hosted service as
-durably persisted until a dedicated database is configured and persistence plus recovery are tested
-against the deployed commit.
+The opt-in PostgreSQL adapter and migration/recovery tooling were merged in
+[PR #33](https://github.com/kaustubhdua/GenomeGuard/pull/33) as commit
+`9cdf48e6348bda6ca1f7f950d357f9c0b0d79301`. The code is present on `main`, but the active Render
+service is still deployed from `154ee80916e1a45080bc4160902516768afaee15`; it does not yet use the
+PostgreSQL adapter. The Render account currently has no PostgreSQL instance configured. The adapter
+includes a versioned schema migration, a one-time offline SQLite migration tool, PostgreSQL audit
+sequence locking, transactional mutation handling, integration tests, and backup/restore tooling.
+These repository features do not provision a database or prove that the hosted service has durable
+persistence. A dedicated database, secured `GG_DATABASE_URL`, provider backup policy, isolated
+restore drill, and deployed persistence/recovery tests are still required. Do not describe the hosted
+service as durably persisted until these are complete.
 
 ## Why the service is not production-ready
 
