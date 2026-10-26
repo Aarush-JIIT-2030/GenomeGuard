@@ -5,8 +5,8 @@
 - Public URL: https://genomeguard.onrender.com
 - Hosting: Render web service, free plan, Singapore region
 - Service: `srv-dbev1ka9lscs738813t0`
-- Deployed source commit: `154ee80916e1a45080bc4160902516768afaee15`
-- Render deployment: `dep-dbf0ijrrjlhs73951960` (reported `live`)
+- Deployed source commit: `eab308f27113e207b995e5c310f339abbd91d3a3`
+- Render deployment: `dep-dbf6u1dg1s2s73emug40` (reported `live` by Render on 2026-10-25)
 - Runtime: Docker, Python 3.12 image, Uvicorn
 - Data: public 1000 Genomes/IGSR chromosome 22 genotype calls, 600 samples × 3,000 variants
 - Policy provenance: a versioned mapping of published dataset-level public-release terms; not participant-specific consent and not independent legal review
@@ -14,14 +14,14 @@
 - Explanations: built-in templates; no live LLM configured
 - Secrets: master and admin keys are environment configuration and must never be committed to the repository or copied into public issues/screenshots.
 
-The Docker image builds the cohort from the official public source and records source-file and policy-file hashes. See the [Render service dashboard](https://dashboard.render.com/web/srv-dbev1ka9lscs738813t0) for live service state.
+The Docker image builds the cohort from the official public source and records source-file and policy-file hashes. The latest observed Render deployment is `dep-dbf6u1dg1s2s73emug40` at commit `eab308f27113e207b995e5c310f339abbd91d3a3`. The latest main commit is documentation-only `65e828c2ed54f9537bdecc1aab81b04109a1e06a`; it is not the deployed application SHA. See the [Render service dashboard](https://dashboard.render.com/web/srv-dbev1ka9lscs738813t0) for live service state.
 
 ## Health and readiness
 
 - `GET /health` is a liveness/provenance endpoint. HTTP 200 means the app can answer requests; it does not mean production use is safe.
 - `GET /health/ready` intentionally returns HTTP 503 with `ready: false` while required production controls are unverified.
-- The latest [live research-mode workflow #40199498444](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498444) verified real public-source genotype provenance, the dataset-level policy boundary, disabled demo endpoints, unauthorized-call rejection, all nine UI routes, responsive layouts, keyboard behavior, reduced motion, reflow, and automated accessibility checks.
-- [Main CI run #40199498577](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498577) passed on deployed source commit `154ee80916e1a45080bc4160902516768afaee15`.
+- The latest recorded live research-mode workflow [#40199498444](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498444) passed against the prior app commit `154ee80916e1a45080bc4160902516768afaee15`. It predates deployment `dep-dbf6u1dg1s2s73emug40`; rerun live acceptance against the current deployment before treating its runtime as fully reverified.
+- [Main CI run #40233882304](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40233882304) passed on main commit `65e828c2ed54f9537bdecc1aab81b04109a1e06a`. This is repository CI evidence, not live-deployment evidence.
 
 
 ## PostgreSQL implementation status (merged; not deployed)
