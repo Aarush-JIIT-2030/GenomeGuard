@@ -8,7 +8,9 @@ version = "0.1.0"
 description = "Consent-aware, relative-aware governance and security layer for genomic data (synthetic by default; optional real-genotype research evaluation)."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
+authors = [{ name = "Kaustubh Dua" }]
+classifiers = ["License :: Other/Proprietary License"]
 dependencies = [
     "starlette>=0.37",
     "uvicorn[standard]>=0.27",
