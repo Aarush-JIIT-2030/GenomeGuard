@@ -14,7 +14,7 @@
 - Explanations: built-in templates; no live LLM configured
 - Secrets: master and admin keys are environment configuration and must never be committed to the repository or copied into public issues/screenshots.
 
-The Docker image builds the cohort from the official public source and records source-file and policy-file hashes. The latest observed Render deployment is `dep-dbf6u1dg1s2s73emug40` at commit `eab308f27113e207b995e5c310f339abbd91d3a3`. The latest main commit is documentation-only `65e828c2ed54f9537bdecc1aab81b04109a1e06a`; it is not the deployed application SHA. See the [Render service dashboard](https://dashboard.render.com/web/srv-dbev1ka9lscs738813t0) for live service state.
+The Docker image builds the cohort from the official public source and records source-file and policy-file hashes. Render reports deployment `dep-dbf6u1dg1s2s73emug40` as `live`, built from merge commit `eab308f27113e207b995e5c310f339abbd91d3a3` (checked 2026-10-26). The live deployment status confirms Render completed the deployment; it does not replace a successful end-to-end runtime acceptance test. See the [Render service dashboard](https://dashboard.render.com/web/srv-dbev1ka9lscs738813t0) for current service state.
 
 ## Health and readiness
 
@@ -24,19 +24,21 @@ The Docker image builds the cohort from the official public source and records s
 - [Main CI run #40233882304](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40233882304) passed on main commit `65e828c2ed54f9537bdecc1aab81b04109a1e06a`. This is repository CI evidence, not live-deployment evidence.
 
 
-## PostgreSQL implementation status (merged; not deployed)
+## PostgreSQL implementation status (merged; hosted database not configured)
 
-The opt-in PostgreSQL adapter and migration/recovery tooling were merged in
-[PR #33](https://github.com/kaustubhdua/GenomeGuard/pull/33) as commit
-`9cdf48e6348bda6ca1f7f950d357f9c0b0d79301`. The code is present on `main`, but the active Render
-service is still deployed from `154ee80916e1a45080bc4160902516768afaee15`; it does not yet use the
-PostgreSQL adapter. The Render account currently has no PostgreSQL instance configured. The adapter
+The opt-in PostgreSQL adapter and migration/recovery tooling were merged through
+[PR #33](https://github.com/kaustubhdua/GenomeGuard/pull/33). The merge commit is
+`eab308f27113e207b995e5c310f339abbd91d3a3`; the feature branch's final tested commit was
+`55203251ad1fc068c58e94c52c1933ea282ff997`. Render now reports deployment
+`dep-dbf6u1dg1s2s73emug40` at the merge commit as `live`. The Render account still has no GenomeGuard
+PostgreSQL instance configured, and `GG_DATABASE_URL` is not configured for the service. Therefore,
+the deployed application does **not** yet have verified durable request/audit persistence. The adapter
 includes a versioned schema migration, a one-time offline SQLite migration tool, PostgreSQL audit
 sequence locking, transactional mutation handling, integration tests, and backup/restore tooling.
-These repository features do not provision a database or prove that the hosted service has durable
-persistence. A dedicated database, secured `GG_DATABASE_URL`, provider backup policy, isolated
-restore drill, and deployed persistence/recovery tests are still required. Do not describe the hosted
-service as durably persisted until these are complete.
+These repository features do not provision a database or prove durable persistence. A dedicated
+persistent database, secured `GG_DATABASE_URL`, provider backup policy, isolated restore drill, and
+deployed persistence/recovery tests are still required. Do not describe the hosted service as durably
+persisted until these are complete.
 
 ## Why the service is not production-ready
 
