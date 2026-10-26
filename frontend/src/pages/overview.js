@@ -2,13 +2,22 @@ import { api, state, isSteward } from "../api.js";
 import { h, card, kpi, badge, pipeline, workflow, when, pct } from "../ui.js";
 import { startTour, tourAvailable } from "../tour.js";
 
-const ROSTER = [
-  ["Consent agent", "Reads each donor's permissions and keeps out anyone who did not agree to this use."],
-  ["Privacy risk agent", "Scores how easily someone could be re-identified, including their relatives."],
-  ["Anomaly monitor", "Watches query patterns for probing and freezes accounts that look like attacks."],
-  ["Explainer agent", "Tells the researcher in plain words why a request was approved, changed or refused."],
-  ["Audit agent", "Writes every decision into a tamper-evident hash chain."],
-  ["Consent concierge", "Answers donors' questions about who used their data. Fixed questions only."],
+const DEMO_ROSTER = [
+  ["Consent agent (demo)", "Uses simulated participant permissions for local demonstration only; these are not real consent records."],
+  ["Privacy risk assessment", "Estimates re-identification risk, including modeled relative exposure; it is not a clinical or independently validated risk score."],
+  ["Anomaly monitor", "Checks query patterns for selected probing signals and may flag or freeze demo accounts."],
+  ["Decision explainer (templates)", "Explains decisions using built-in templates; it does not imply a live language model is connected."],
+  ["Audit log", "Records events in a locally hash-chained log. The chain is tamper-evident, not an independent immutable anchor."],
+  ["Consent concierge (demo)", "Provides fixed scripted answers for the demo; it is not a real participant support channel."],
+];
+
+const RESEARCH_ROSTER = [
+  ["Dataset policy provenance", "Applies the documented public-release policy mapping for this dataset. It is not participant-specific consent or a legal authorization decision."],
+  ["Privacy risk assessment", "Computes heuristic risk estimates on public genotype data; these are research signals, not independently validated risk guarantees."],
+  ["Query-pattern monitoring", "Checks selected query patterns for potential probing. Coverage is limited to the implemented detectors."],
+  ["Decision explanations", "Uses built-in templates. No live LLM is configured for this hosted instance."],
+  ["Tamper-evident audit log", "Records events in a local hash chain. No independently controlled external audit anchor is configured."],
+  ["Human review workflow", "Supports authorized review where enabled; this deployment does not provide institutional SSO or verified organizational identity."],
 ];
 
 export async function render() {
@@ -35,7 +44,9 @@ export async function render() {
   const pipe = pipeline(stages, { play: !!latest });
   const hero = h("section", { class: "card hero" },
     h("h1", { style: "margin:0 0 6px" }, "Govern genomic data access with auditable decisions."),
-    h("p", { class: "lede" }, "GenomeGuard is a team of AI agents that sits in front of a genomic data store. They check consent, weigh re-identification risk, add protections and keep a tamper-evident record. The agents advise. Fixed rules decide, and a person signs off on anything risky."),
+    h("p", { class: "lede" }, state.demo
+      ? "GenomeGuard demonstrates a research-access workflow with simulated participant permissions, risk checks, output protections and a tamper-evident audit log. Demo records are synthetic and are not real participant consent. Rules decide; advisory components do not grant access."
+      : "This hosted research instance evaluates requests against a documented public-dataset policy, applies heuristic risk checks and output protections, and records decisions in a tamper-evident audit log. It uses public 1000 Genomes data; policy provenance is dataset-level, not participant-specific consent. Explanations use built-in templates, and no live LLM is configured."),
     h("div", { style: "display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px" },
       tourAvailable() ? h("button", { onclick: startTour }, "Guided walkthrough") : null,
       h("a", { class: tourAvailable() ? "btn ghost" : "btn", href: "#/requests" }, isSteward() ? "Review requests" : "Send a request"),
@@ -80,8 +91,9 @@ export async function render() {
     card("Recent activity", rows.length ? h("a", { href: "#/requests" }, "All requests") : null, feed),
     state.demo ? card("Does it hold up?", h("a", { href: "#/redteam" }, "Red-team results"), proof) : null));
 
-  const roster = state.demo ? ROSTER : ROSTER.filter(([name]) => name !== "Consent concierge");
-  root.append(card("The agent team", "Agents advise, rules decide",
+  const roster = state.demo ? DEMO_ROSTER : RESEARCH_ROSTER;
+  root.append(card(state.demo ? "Demo workflow components" : "Research workflow components",
+    state.demo ? "Simulated demonstration — not real participant governance" : "Implemented capabilities and their current limits",
     h("div", { class: "grid g2" }, roster.map(([n, t]) => h("div", {}, h("b", {}, n), h("p", { class: "muted", style: "margin:2px 0 0" }, t))))));
   return root;
 }
