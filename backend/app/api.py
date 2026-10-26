@@ -232,6 +232,13 @@ def create_app(svc: GenomeGuardService | None = None) -> Starlette:
                     "returnedGranularity": gran, "returnedSchemas": schemas,
                     "receivedRequestSummary": received}
 
+        # authenticate before looking at parameters, so an anonymous caller learns nothing
+        try:
+            r = requester(request)
+        except ServiceError as exc:
+            return _j({"meta": response_meta(), "error": {"errorCode": exc.status,
+                       "errorMessage": "Authentication required"}}, exc.status)
+
         raw_gran = q.get("requestedGranularity", "boolean")
         gran = raw_gran if raw_gran in ("boolean", "count") else "boolean"
         try:
@@ -246,12 +253,6 @@ def create_app(svc: GenomeGuardService | None = None) -> Starlette:
             return _j({"meta": meta, "error": {"errorCode": 422,
                        "errorMessage": "requestedGranularity must be boolean or count"},
                        "info": {"requestedGranularity": raw_gran}}, 422)
-        try:
-            r = requester(request)
-        except ServiceError as exc:
-            return _j({"meta": meta, "error": {"errorCode": exc.status,
-                       "errorMessage": "Authentication required"}}, exc.status)
-
         hits = [i for i, (c, p, _ref, a) in enumerate(S().ds.coords)
                 if c == chrom and p == start and (alt is None or a == alt)]
         if not hits:
