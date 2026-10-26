@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/ci.yml)
 [![Security verification](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/security.yml/badge.svg)](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/security.yml)
+[![Live acceptance](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/live-acceptance.yml/badge.svg)](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/live-acceptance.yml)
 [![License: All rights reserved](https://img.shields.io/badge/License-All%20rights%20reserved-red.svg)](LICENSE)
 
 **Live research instance:** https://genomeguard.onrender.com — built from public 1000 Genomes genotypes with a documented dataset-level policy mapping. This is not participant-specific consent, has no institutional identity provider or durable request/audit storage, and is not for clinical use.
