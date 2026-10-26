@@ -6,11 +6,11 @@ Read every result with its exact commit and workflow run. A passing workflow pro
 
 - Public URL: https://genomeguard.onrender.com
 - Render service: `srv-dbev1ka9lscs738813t0`
-- Deployed application commit: `154ee80916e1a45080bc4160902516768afaee15`
-- Render deployment: `dep-dbf0ijrrjlhs73951960` (status reported `live`)
+- Deployed application commit: `eab308f27113e207b995e5c310f339abbd91d3a3`
+- Render deployment: `dep-dbf6u1dg1s2s73emug40` (status reported `live` by Render on 2026-10-25)
 - Current mode: non-demo research mode. The image is built from real public 1000 Genomes/IGSR chromosome 22 genotypes; 600 samples and 3,000 variants are loaded.
-- Live research-mode checks: [run #40199498444](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498444) passed on commit `154ee80916e1a45080bc4160902516768afaee15`.
-- Main CI: [run #40199498577](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498577) passed on the same commit.
+- Live research-mode checks: [run #40199498444](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498444) passed on the prior deployed app commit `154ee80916e1a45080bc4160902516768afaee15`. This run predates the latest deployment and must not be treated as verification of the current app SHA.
+- Main CI: [run #40233882304](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40233882304) passed on main commit `65e828c2ed54f9537bdecc1aab81b04109a1e06a`; this does not substitute for live acceptance testing.
 - Real-genotype ingestion/evaluation: [run #40199498450](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498450) passed.
 - FHIR R4 Consent schema validation: [run #40199498532](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498532) passed. This validates an interoperability artifact, not legal consent.
 - GA4GH Beacon v2 response-schema validation: [run #40199498557](https://github.com/kaustubhdua/GenomeGuard/actions/runs/40199498557) passed. This is core schema validation, not full Beacon certification.
@@ -38,7 +38,7 @@ The live response reported 600 donors, 3,000 variants, a valid local audit chain
 
 ## Persistence and security boundaries
 
-The Render service is on the free plan and has no configured persistent disk. Its SQLite database path is `/data/genomeguard.sqlite3`; the filesystem is ephemeral. Requests and audit history therefore must not be assumed to survive a restart, redeploy, or instance replacement. The current live research-mode run did not perform a new destructive persistence experiment.
+The Render service is on the free plan and has no configured persistent disk. Its SQLite database path is `/data/genomeguard.sqlite3`; the filesystem is ephemeral. Requests and audit history therefore must not be assumed to survive a restart, redeploy, or instance replacement. The current live research-mode run did not perform a new destructive persistence experiment. The latest deployment includes the PostgreSQL adapter foundation, but no Render Postgres instance exists and `GG_DATABASE_URL` is not configured; durable persistence is still not established.
 
 The live smoke test proves that unauthenticated calls are rejected and that demo-only endpoints are disabled. It does not prove institutional identity: the current service uses provisioned API keys, not OIDC/SSO or verified organizational identities. A local hash chain detects accidental or partial edits but is not immutable against an actor who can rewrite the database and recompute the chain. There is no external audit anchor configured.
 
