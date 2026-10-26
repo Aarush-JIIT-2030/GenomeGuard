@@ -178,8 +178,21 @@ $("cmdk-input").addEventListener("input", () => { sel = 0; filter(); });
 $("cmdk").addEventListener("click", (e) => { if (e.target === $("cmdk")) closePalette(); });
 $("open-cmdk").addEventListener("click", openPalette);
 $("theme").addEventListener("click", toggleTheme);
-$("menu").addEventListener("click", () => $("shell").classList.toggle("open"));
-$("scrim").addEventListener("click", () => $("shell").classList.remove("open"));
+// Mobile drawer: closed means hidden from keyboard and screen readers too, and Escape or
+// following a link closes it and gives focus back to the button.
+function setMenu(open, returnFocus = false) {
+  $("shell").classList.toggle("open", open);
+  $("menu").setAttribute("aria-expanded", String(open));
+  $("menu").setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  if (open) $("nav").querySelector("a")?.focus();
+  else if (returnFocus) $("menu").focus();
+}
+$("menu").addEventListener("click", () => setMenu(!$("shell").classList.contains("open")));
+$("scrim").addEventListener("click", () => setMenu(false));
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && $("shell").classList.contains("open") && !$("cmdk").classList.contains("open")) setMenu(false, true);
+});
+window.addEventListener("hashchange", () => { if ($("shell").classList.contains("open")) setMenu(false); });
 $("who").addEventListener("change", (e) => { setWho(e.target.value); drawWho(); drawNav(""); render(); });
 $("connect-key").addEventListener("click", async () => {
   const key = $("api-key-input").value.trim();

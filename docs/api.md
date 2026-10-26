@@ -2,12 +2,14 @@
 
 Generated from `backend/app/api.py` (also served live at `/docs` and `/openapi.json`).
 
-Auth: `X-API-Key` carries a requester key or the steward (admin) key; donors use `X-Donor-Key`. Demo keys are published at `/demo/requesters` and `/demo/donors` in demo mode only.
+Auth: requesters send `X-API-Key`; stewards send the admin key as `X-Admin-Key`; donors send `X-Donor-Key`. Demo keys are published at `/demo/requesters` and `/demo/donors` in demo mode only.
 
 | Method | Path | Purpose | Access |
 |---|---|---|---|
 | GET | `/health` | Liveness and dataset facts | public |
+| GET | `/health/ready` | Production readiness gate; distinguishes liveness from safe real-data operation | public |
 | GET | `/demo/requesters` | Demo accounts and keys (demo mode only) | public |
+| POST | `/admin/requesters` | Provision a requester API key (returned once) | admin |
 | GET | `/me` | Who am I, my budget | requester |
 | POST | `/requests` | Submit a data request; returns decision, explanation, risk, transform summary and (if released) aggregate data | requester |
 | GET | `/beacon/g_variants` | GA4GH Beacon v2 style allele lookup, governed by the same consent, risk and audit pipeline | requester |
