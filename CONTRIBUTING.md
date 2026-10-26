@@ -47,3 +47,7 @@ make eval
 5. Avoid bundling unrelated formatting or dependency changes with behavioral fixes.
 
 The CI workflow is the authoritative automated gate for the repository. Manual review is still required for deployment behavior, assistive-technology usability, and any security or scientific claims.
+
+## Licence
+
+This project is all rights reserved (see [LICENSE](LICENSE)). Outside contributions are accepted only after the copyright holder agrees in writing, so please open an issue first.

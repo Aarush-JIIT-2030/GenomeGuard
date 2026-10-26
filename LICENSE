@@ -1,21 +1,30 @@
-MIT License
+GenomeGuard - All Rights Reserved
 
-Copyright (c) 2026 Kaustubh Dua
+Copyright (c) 2026 Kaustubh Dua. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This source code and its documentation are made publicly visible only so that they can be
+read and evaluated (for example by hackathon judges, reviewers and prospective collaborators).
+Visibility is not a licence.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Permitted, without asking:
+  - viewing the repository and running the software locally to evaluate it;
+  - quoting short excerpts with attribution, for review or discussion.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Not permitted without the copyright holder's prior written permission:
+  - copying, forking for reuse, redistributing or republishing the code, data files, documents,
+    designs or the user interface, in whole or in part;
+  - creating derivative works or using any part of it in another project, product or service;
+  - using it commercially, or submitting it, or work derived from it, to any competition,
+    course or publication as your own;
+  - removing or altering this notice or the copyright statements.
+
+Third-party components keep their own licences. Public genomic data referenced by this project
+(for example the 1000 Genomes Project) remains subject to its providers' terms.
+
+Versions of this repository published before this notice were distributed under the MIT
+Licence; copies lawfully obtained under that licence remain governed by it. This notice applies
+to all later versions.
+
+The software is provided "as is", without warranty of any kind.
+
+Permission requests: contact the copyright holder through the GitHub profile kaustubhdua.

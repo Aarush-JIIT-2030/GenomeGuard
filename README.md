@@ -1,7 +1,7 @@
 # GenomeGuard
 
 [![CI](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/kaustubhdua/GenomeGuard/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: All rights reserved](https://img.shields.io/badge/License-All%20rights%20reserved-red.svg)](LICENSE)
 
 **Live research instance:** https://genomeguard.onrender.com — built from public 1000 Genomes genotypes with a documented dataset-level policy mapping. This is not participant-specific consent, has no institutional identity provider or durable request/audit storage, and is not for clinical use.
 
@@ -93,4 +93,4 @@ Bug reports, focused improvements, tests, and documentation corrections are welc
 
 ## License
 
-GenomeGuard is released under the [MIT License](LICENSE).
+Copyright (c) 2026 Kaustubh Dua. All rights reserved. The source is visible for evaluation only; copying, redistribution, derivative works and commercial use need written permission. See [LICENSE](LICENSE).
