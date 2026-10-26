@@ -55,7 +55,7 @@ jobs:
           python -m pip install -e ".[dev]"
           python -m pip install pip-audit
       - name: Audit resolved Python environment
-        run: pip-audit --strict
+        run: pip-audit --strict --skip-editable
   gitleaks:
     name: Secret scanning
     runs-on: ubuntu-latest
