@@ -82,6 +82,7 @@ The service applies a deterministic request pipeline: request validation, policy
 - [Real cohort ingestion and consent requirements](docs/real-cohort-consent.md)
 - [Hosted deployment and operational limitations](docs/production-deployment.md)
 - [PostgreSQL operations, backups, and recovery](docs/postgresql-operations.md)
+- [Evidence-based completion audit (26 October 2026)](docs/completion-audit-2026-10-26.md)
 
 ## Security and privacy
 
