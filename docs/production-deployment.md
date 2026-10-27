@@ -1,56 +1,72 @@
 # Hosted deployment record
 
-Last audited: 26 October 2026.
+Last audited: 27 October 2026.
 
 ## Current public research instance
 
 - Public URL: https://genomeguard.onrender.com
 - Hosting: Render web service, free plan, Singapore region
 - Service ID: `srv-dbev1ka9lscs738813t0`
-- Latest deployment checked: `dep-dbfiug0u01pc73beus5g`, status `live`
-- Deployed source commit: `a9aed73c4c0ffad632b892eb98eee294a4e9d751` (PR #36 merge)
+- Current Render deployment: `dep-dbg42osipgvc73eesutg`, status `live`
+- Deployed source commit: `a100921c98dbb194e365f76d32f9340700b2c196` (merge of PR #43)
 - Runtime: Docker, Python 3.12 image, Uvicorn
 - Dataset: public 1000 Genomes / IGSR chromosome 22 genotype calls, 600 samples × 3,000 variants
 - Policy provenance: versioned mapping of published dataset-level public-release terms; not participant-specific consent and not independent legal review
-- Demo mode and destructive audit-tampering mode: disabled
+- Hosted demo mode and destructive audit-tampering mode: disabled
 - Explanations: built-in templates; no live LLM configured
 
-Render reports the deployment as live and tied to the audited main commit. The available web verification client could not fetch the public URL or health endpoints during this audit, so a successful current end-to-end runtime smoke is **not established by this document**. Re-run the documented live checks from a network-enabled runner before relying on the runtime.
+Render reports the current main commit as live. This confirms deployment status, not end-to-end runtime health. The available web verifier could not fetch the public URL or health endpoints, and the connected Vercel account could not independently inspect the current deployment content. Do not claim a live UI/API acceptance pass until the documented checks pass from a network-enabled runner.
 
 ## Health and readiness configuration
 
-The repository's `render.yaml` declares `healthCheckPath: /health`. However, Render's current service configuration reported an empty `healthCheckPath` on 26 October 2026. This is configuration drift. Correct the actual Render service setting through the provider dashboard/API, then verify:
-- `GET /health` reflects liveness and source provenance only;
-- `GET /health/ready` remains not-ready (HTTP 503) while required production controls are absent;
-- deployment and post-deploy acceptance tests run against the exact deployed commit.
+The repository's `render.yaml` declares `healthCheckPath: /health`, but Render's live service configuration reported an empty `healthCheckPath` during the 26 October audit. The setting could not be corrected with the available provider actions. This configuration drift remains open.
+
+Required verification:
+- Configure Render's health check path as `/health` in the service dashboard.
+- Confirm `GET /health` reports liveness and source provenance only.
+- Confirm `GET /health/ready` remains not-ready (HTTP 503) while production controls are absent.
+- Run read-only research-mode, API, route/UI, authorization, and accessibility smoke tests against the exact deployed commit.
 
 Do not treat a liveness response, deployment status, or green CI as production readiness.
 
-## PostgreSQL implementation status
+## PostgreSQL and Supabase status
 
-The opt-in PostgreSQL adapter and migration/recovery tooling were merged through [PR #33](https://github.com/kaustubhdua/GenomeGuard/pull/33), merge commit `eab308f27113e207b995e5c310f339abbd91d3a3`. Subsequent UI, authorization, and documentation work is present on main.
+The opt-in PostgreSQL adapter and migration/recovery tooling were merged through [PR #33](https://github.com/kaustubhdua/GenomeGuard/pull/33). The Render service still has no verified GenomeGuard PostgreSQL connection: `GG_DATABASE_URL` is not configured. The deployed service therefore has no verified durable request/audit persistence. SQLite is stored at `/data/genomeguard.sqlite3` on an ephemeral filesystem. The adapter and its tests do not provision a database or prove production durability by themselves.
 
-The Render account currently has **no GenomeGuard PostgreSQL instance** and `GG_DATABASE_URL` is not configured. The deployed service therefore has no verified durable request/audit persistence. SQLite is stored at `/data/genomeguard.sqlite3` on an ephemeral filesystem. The adapter includes versioned migrations, an offline SQLite migration tool, PostgreSQL audit sequence locking, transactional mutation handling, integration tests, and backup/restore tooling; none of these provisions a database or proves production durability by itself.
+The intended Supabase project is `common 1`, ID `hkyieaovolkethovyenb`, with the application schema isolated as `genomeguard`. The live database contains 13 application tables, but the cohort, donor, genotype, request, decision, and audit tables have zero rows; no production cohort was fabricated or imported. The backend is not connected to this database.
+
+**Critical live security finding:** a direct database query on 27 October reported Row Level Security disabled on all 13 tables. Supabase's security advisor classifies this as critical. Direct privilege checks previously showed no schema USAGE or donor-table SELECT/INSERT grants for `anon` and `authenticated`, but that does not replace enabling and verifying RLS. The reviewed defense-in-depth migration `supabase/migrations/20261027010000_private_schema_rls.sql` is merged in [PR #43](https://github.com/kaustubhdua/GenomeGuard/pull/43), but has **not** been applied to the live database. It revokes browser-role grants and enables RLS without client-facing policies; the intended access model is a trusted server-side PostgreSQL connection. Do not expose private genomic tables through the Supabase Data API.
 
 Required before production:
-1. Provision a dedicated managed PostgreSQL database for GenomeGuard only, with an explicitly approved recurring budget and owner.
-2. Set `GG_DATABASE_URL` and encryption/master secrets using the provider's secret manager; never commit them or expose them to browser code.
-3. Apply and verify migrations, then test request ownership, concurrent writes, and audit ordering against the deployed service.
-4. Prove records survive application restart and redeploy.
-5. Configure backup retention and recovery objectives; restore a backup into an isolated database and run integrity and application acceptance checks.
+1. Review and explicitly approve the private-schema RLS migration and server-side access model; apply it through the reviewed migration process, then rerun live privilege/RLS checks.
+2. Configure the actual Supabase PostgreSQL connection string as Render secret `GG_DATABASE_URL` using the provider dashboards. Never paste it into chat, commit it, or expose it to browser code.
+3. Verify migrations, least-privilege server connection, request ownership, concurrent writes, audit ordering, and failure behavior against the deployed service.
+4. Prove records survive restart and redeploy.
+5. Configure backup retention and recovery objectives; restore into an isolated database and run integrity/application acceptance checks.
 
-Do not use a temporary free database as a production fix. Render's free PostgreSQL databases expire after 30 days and do not provide managed backups. See [Render free-plan limitations](https://render.com/docs/free) and [Postgres recovery and backups](https://render.com/docs/postgresql-backups).
+Do not use a temporary free database as a production fix. Render's free PostgreSQL databases expire after 30 days and do not provide managed backups. See [Render free-plan limitations](https://render.com/docs/free) and [Postgres recovery and backups](https://render.com/docs/postgresql-backups). Supabase's [production checklist](https://supabase.com/docs/guides/deployment/going-into-prod) recommends RLS with appropriate policies, reviewing security findings, load testing, and a verified backup strategy.
+
+## Vercel frontend status
+
+- Project: `genome-guard` — [Vercel project](https://vercel.com/jyc-website/genome-guard)
+- Project ID: `prj_Q2uhnuLdzXTo4JoZUXqzhW6YuICT`
+- Settings updated: root directory `frontend`, static/Other framework, output directory `.`, preview SSO protection.
+- GitHub-triggered preview for PR #43 was reported `READY`.
+- A production deployment and public route-by-route acceptance test are **not independently verified**. Direct production deployment creation was denied by the connected Vercel API, and current deployment-list access is denied.
+
+The frontend rewrites API requests to the Render service. Vercel is not a replacement for durable backend storage. Promote a production deployment only after the UI and API acceptance tests pass and the private-data security controls are in place.
 
 ## Explicit production blockers
 
-1. **Durable persistence and recovery:** No managed database configured; no production backup/restore drill.
-2. **Institutional identity:** No institutional OIDC/SSO, verified organization membership, or institution-controlled MFA lifecycle. Provisioned API keys are not verified human identity.
-3. **Participant consent and withdrawal:** Hosted public-data policy is dataset-level only. There is no authoritative participant-specific consent/withdrawal source.
-4. **External audit anchoring:** The local hash chain is tamper-evident but not immutable against an actor able to rewrite the database and recompute hashes. No independently controlled external anchor or trusted timestamp is configured.
-5. **Independent assurance:** No independent penetration test, privacy impact assessment, institutional ethics/legal review, clinical validation, or cryptographic review has been completed.
-6. **Manual accessibility:** Automated axe/browser checks do not replace manual screen-reader and assistive-technology review.
-7. **Operational controls:** Monitoring/alerting, incident response, retention/deletion, recurring recovery drills, and multi-instance consistency are not verified.
-8. **Live acceptance:** Re-run read-only research-mode, route/UI, authorization, and accessibility smoke tests on the exact current deployment; the current audit could not fetch the live endpoints through its web verifier.
+1. **Durable persistence and recovery:** no configured/verified database connection; no production backup/restore drill.
+2. **Database security:** RLS is disabled on all 13 live application tables; the merged migration remains unapplied.
+3. **Institutional identity:** no institutional OIDC/SSO, verified organization membership, or institution-controlled MFA lifecycle. Provisioned API keys are not verified human identity.
+4. **Participant consent and withdrawal:** hosted public-data policy is dataset-level only. There is no authoritative participant-specific consent/withdrawal source.
+5. **External audit anchoring:** the local hash chain is tamper-evident but not immutable against an actor able to rewrite the database and recompute hashes. No independently controlled external anchor or trusted timestamp is configured.
+6. **Independent assurance:** no independent penetration test, privacy impact assessment, institutional ethics/legal review, clinical validation, or cryptographic review has been completed.
+7. **Manual accessibility:** automated axe/browser checks do not replace manual screen-reader and assistive-technology review.
+8. **Operational controls:** monitoring/alerting, incident response, retention/deletion, recurring recovery drills, and multi-instance consistency are not verified.
+9. **Live acceptance:** run read-only research-mode, route/UI, authorization, and accessibility smoke tests on the exact current deployment; the available verifier could not fetch the live endpoints.
 
 ## Data and policy boundary
 
