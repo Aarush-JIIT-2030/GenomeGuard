@@ -1,0 +1,96 @@
+name: Deployment configuration checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deployment-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Validate Vercel configuration and frontend asset references
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          const configPath = 'frontend/vercel.json';
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          if (!Array.isArray(config.rewrites) || config.rewrites.length < 2) {
+            throw new Error('Vercel must keep the static alias and API fallback rewrites.');
+          }
+          const alias = config.rewrites.find((r) => r.source === '/static/:path*');
+          if (!alias || alias.destination !== '/:path*') {
+            throw new Error('Static alias must map /static/src/* to /src/* under Root Directory frontend.');
+          }
+          const fallback = config.rewrites.find((r) => r.source === '/(.*)');
+          if (!fallback || fallback.destination !== 'https://genomeguard.onrender.com/$1') {
+            throw new Error('Until API parity passes, fallback must retain the existing backend to avoid breaking the live app.');
+          }
+          const html = fs.readFileSync('frontend/index.html', 'utf8');
+          const refs = [...html.matchAll(/(?:src|href)="\/static\/([^"]+)"/g)].map((m) => m[1]);
+          for (const ref of refs) {
+            const target = path.join('frontend', ref);
+            if (!fs.existsSync(target)) throw new Error('Missing frontend asset: ' + target);
+          }
+          console.log('Vercel JSON valid; static asset references exist:', refs.join(', '));
+          NODE
+      - name: Validate Supabase migration and Edge Function source files exist
+        run: |
+          test -s supabase/functions/genomeguard-health/index.ts
+          test -s supabase/migrations/20261027000000_genomeguard_schema.sql
+          test -s supabase/migrations/20261027001000_index_donor_access_request.sql
+          test -s supabase/migrations/20261027002000_deployment_status.sql
+          test -s supabase/migrations/20261027003000_deployment_status_policy.sql
+
+  postgres-migrations:
+    name: Validate Supabase SQL migrations on PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: genomeguard_migration_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d genomeguard_migration_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Apply migrations to a clean PostgreSQL database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d genomeguard_migration_test -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;"
+          for migration in supabase/migrations/*.sql; do
+            echo "Applying $migration"
+            psql -h localhost -U postgres -d genomeguard_migration_test -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Assert schema isolation and fail-closed status
+        env:
+          PGPASSWORD: postgres
+        run: |
+          tables="$(psql -h localhost -U postgres -d genomeguard_migration_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='genomeguard' AND table_type='BASE TABLE'")"
+          test "$tables" = "13"
+          psql -h localhost -U postgres -d genomeguard_migration_test -v ON_ERROR_STOP=1 -c "SELECT 1 WHERE NOT has_schema_privilege('anon', 'genomeguard', 'USAGE') AND NOT has_schema_privilege('authenticated', 'genomeguard', 'USAGE') AND NOT has_table_privilege('anon', 'public.genomeguard_deployment_status', 'SELECT') AND NOT has_table_privilege('authenticated', 'public.genomeguard_deployment_status', 'SELECT') AND has_table_privilege('service_role', 'public.genomeguard_deployment_status', 'SELECT')" | grep -q "(1 row)"
+          psql -h localhost -U postgres -d genomeguard_migration_test -v ON_ERROR_STOP=1 -c "SELECT 1 FROM public.genomeguard_deployment_status WHERE api_migration_complete = false AND genomic_dataset_loaded = false AND render_dependency_present = true AND release_gate_passed = false" | grep -q "(1 row)"
