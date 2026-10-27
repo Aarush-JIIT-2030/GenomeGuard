@@ -59,7 +59,7 @@ jobs:
         run: make ui-smoke
       - name: Preserve UI screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: genomeguard-ui-review-${{ github.sha }}
           path: /tmp/genomeguard-ui-screenshots/
