@@ -68,6 +68,7 @@ Verified after application:
 - `anon`, `authenticated`, and `service_role` have no `USAGE` privilege on the `genomeguard` schema.
 - The application/data tables remain empty; no synthetic cohort or participant records were added.
 - The migration appears in Supabase migration history.
+- A post-migration security-advisor query reports `rls_enabled_no_policy` informational findings for all 13 GenomeGuard tables and seven BharatSim tables. For GenomeGuard, the lack of policies is intentional for this private schema because browser roles have no schema `USAGE` privilege and the design does not expose these tables through the Data API. This still needs to be included in an explicit, reviewed server-side role/access design; do not treat the advisor's INFO findings as a substitute for privilege testing or as evidence that the backend is connected.
 
 This is a useful defense-in-depth improvement. It does **not** prove that the deployed Render backend uses Supabase, does not configure a database connection, does not establish institution-level policies, and does not complete production authorization. The migration intentionally creates no browser-facing policies. The eventual backend must use a separately reviewed server-side database role; the `service_role` API key is not a replacement for a PostgreSQL connection-role design.
 
