@@ -11,7 +11,7 @@ This update records direct repository and Supabase observations made on 28 Octob
 - Reviewed the current `main` repository, existing completion audit, deployment configuration, and the field-first UI pull request.
 - Inspected the linked Supabase project `common 1` read-only. Its current schema includes both `genomeguard` and `bharatsim`; it is therefore shared infrastructure, not an isolated GenomeGuard production database.
 - Checked the deployment status record: `api_migration_complete=false`, `genomic_dataset_loaded=false`, `render_dependency_present=true`, and `release_gate_passed=false`. Its notes say the API, cohort data, and endpoint parity have not been migrated.
-- Checked the `genomeguard` schema: 13 tables exist; row-level security is disabled on those tables. All 12 application/data tables inspected were empty; `schema_migrations` had one row. The separate public deployment-status table has RLS enabled.
+- Initial inspection found 13 tables in the `genomeguard` schema with row-level security disabled. All 12 application/data tables inspected were empty; `schema_migrations` had one row. The separate public deployment-status table has RLS enabled.
 - Checked Supabase security/performance advisors. The security advisor reported seven tables in the separate `bharatsim` schema with RLS enabled but no policies. This is a shared-project finding and must be handled with the BharatSim owner/workflow, not silently changed as part of GenomeGuard.
 - Found an accessibility regression in the UI PR: dark-theme primary buttons rendered white text on a light-green background (contrast ratio 2.14); the donor consent action had the same issue. Patched the theme tokens to use a dark foreground in dark mode and re-triggered CI.
 
@@ -20,7 +20,7 @@ This update records direct repository and Supabase observations made on 28 Octob
 ### P0 — Isolate the database and establish least privilege
 
 - Provision or designate a **GenomeGuard-only** managed PostgreSQL project/database. Do not treat `common 1` as an isolated production store; it currently contains both GenomeGuard and BharatSim schemas.
-- Do not blindly enable RLS on the existing GenomeGuard tables until the intended API connection roles and ownership model are reviewed. The current backend has not been proven to use this database, and blanket policy changes could either break access or create a false sense of security.
+- RLS has now been enabled on all 13 `genomeguard` tables by the scoped migration described in the follow-up section below. This is defense in depth, not a substitute for a dedicated database, explicit server-role design, or authorization tests.
 - Define the access model for every table: application service role, institutional researcher, steward, and any participant-facing access. Keep privileged service credentials server-side; deny direct public access by default.
 - Apply reviewed, versioned migrations to the isolated database and verify the migration history against the repository.
 - Prove that unauthorized roles cannot read or mutate donor, genotype, request, decision, epsilon-ledger, or audit data. Add cross-tenant/role regression tests and run Supabase security advisors after policies are in place.
@@ -57,6 +57,21 @@ The first CI run caught dark-mode action contrast failures. The fix changes the 
 ## Honest scope statement
 
 GenomeGuard is a privacy-aware research prototype for evaluating access to public genomic research data. Its risk scores are heuristics, fixed explanation templates are not a live LLM, synthetic records are confined to clearly labelled local test/demo workflows, and the local hash chain is not an independent immutable audit anchor. It is not a clinical decision system, a guarantee of anonymity, or an approved environment for private/controlled-access genomic data.
+
+## Follow-up change — private-schema RLS enabled
+
+After the initial read-only audit, the existing repository migration `supabase/migrations/20261027010000_private_schema_rls.sql` was applied to the `common 1` project as migration `20261028180028` (`genomeguard_private_schema_rls`). The migration was scoped to the `genomeguard` schema only; it did not alter the `bharatsim` schema.
+
+Verified after application:
+
+- RLS is enabled on all 13 tables in `genomeguard`.
+- `anon`, `authenticated`, and `service_role` have no `USAGE` privilege on the `genomeguard` schema.
+- The application/data tables remain empty; no synthetic cohort or participant records were added.
+- The migration appears in Supabase migration history.
+
+This is a useful defense-in-depth improvement. It does **not** prove that the deployed Render backend uses Supabase, does not configure a database connection, does not establish institution-level policies, and does not complete production authorization. The migration intentionally creates no browser-facing policies. The eventual backend must use a separately reviewed server-side database role; the `service_role` API key is not a replacement for a PostgreSQL connection-role design.
+
+The separate Supabase security-advisor findings for `bharatsim` remain outside the scope of this GenomeGuard change and must be handled through that project's own workflow.
 
 ## Acceptance checklist
 
