@@ -58,8 +58,8 @@ The frontend rewrites API requests to the Render service. Vercel is not a replac
 
 ## Explicit production blockers
 
-1. **Durable persistence and recovery:** no configured/verified database connection; no production backup/restore drill.
-2. **Database security:** RLS is disabled on all 13 live application tables; the merged migration remains unapplied.
+1. **Durable persistence and recovery:** Render has no verified `GG_DATABASE_URL`; the backend is not connected to Supabase and no production backup/restore drill has passed.
+2. **Database security and isolation:** RLS is now enabled on all 13 GenomeGuard tables and browser roles lack schema `USAGE`, but the trusted server connection, least-privilege runtime role, and production access path are not yet verified. Supabase project `common 1` is shared with BharatSim, so this is schema isolation rather than a dedicated production security boundary.
 3. **Institutional identity:** no institutional OIDC/SSO, verified organization membership, or institution-controlled MFA lifecycle. Provisioned API keys are not verified human identity.
 4. **Participant consent and withdrawal:** hosted public-data policy is dataset-level only. There is no authoritative participant-specific consent/withdrawal source.
 5. **External audit anchoring:** the local hash chain is tamper-evident but not immutable against an actor able to rewrite the database and recompute hashes. No independently controlled external anchor or trusted timestamp is configured.
