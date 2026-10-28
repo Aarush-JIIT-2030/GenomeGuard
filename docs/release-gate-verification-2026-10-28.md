@@ -52,7 +52,7 @@ This update records direct repository and Supabase observations made on 28 Octob
 
 The field-first theme is a CSS-only enhancement to the existing vanilla-JavaScript app. Avoid introducing React/Magic UI/React Bits solely for decoration: the repository does not currently use a React runtime, and a migration would increase risk without improving the product's core research workflow.
 
-The first CI run caught dark-mode action contrast failures. The fix changes the theme's foreground token to dark text on light green in dark mode while preserving white text on the darker light-theme primary action. Do not merge the UI PR until the new full CI run is green, including the browser/axe checks.
+The first CI run caught dark-mode action contrast failures. The fix changes the theme's foreground token to dark text on light green in dark mode while preserving white text on the darker light-theme primary action. The fix was merged through [PR #48](https://github.com/kaustubhdua/GenomeGuard/pull/48) after its CodeQL, deployment configuration, PostgreSQL migration validation, secret scanning, dependency audit, and backend/browser test checks passed on the PR head. The merge confirms the UI change was reviewed by CI; a fresh production deployment and live UI smoke test still require verification.
 
 ## Honest scope statement
 
@@ -72,6 +72,12 @@ Verified after application:
 This is a useful defense-in-depth improvement. It does **not** prove that the deployed Render backend uses Supabase, does not configure a database connection, does not establish institution-level policies, and does not complete production authorization. The migration intentionally creates no browser-facing policies. The eventual backend must use a separately reviewed server-side database role; the `service_role` API key is not a replacement for a PostgreSQL connection-role design.
 
 The separate Supabase security-advisor findings for `bharatsim` remain outside the scope of this GenomeGuard change and must be handled through that project's own workflow.
+
+## Follow-up UI release evidence
+
+- [x] Corrected the reported dark-theme button contrast regression in the field-first theme.
+- [x] PR #48 merged after the required CI/security checks passed on the PR head.
+- [ ] Verify the merge commit's deployment on Render/Vercel and run live route-by-route smoke tests.
 
 ## Acceptance checklist
 
