@@ -2,6 +2,7 @@ import { api } from "../api.js";
 import { h, card, notice } from "../ui.js";
 
 const fmt = (value) => Number(value || 0).toLocaleString("en-US");
+const CATALOGUE_URL = "https://hkyieaovolkethovyenb.supabase.co/functions/v1/genomeguard-api/datasets";
 const shortHash = (value) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value)
   ? value.slice(0, 12) + "…" + value.slice(-8) : "Unavailable";
 
@@ -12,12 +13,13 @@ export async function render() {
     h("h1", {}, "Dataset catalogue"),
     h("p", { class: "lede" }, "Datasets appear here only after source review, checksum validation, genotype import, and count reconciliation. Reference metadata is not evidence that genotype data has been loaded.")));
 
-  const response = await api("/datasets");
+  const response = await api(CATALOGUE_URL);
   if (!response.ok) {
     root.append(notice("warn",
       h("strong", {}, "Verified dataset catalogue is not reachable from this deployment."),
       h("p", { class: "muted" }, "No placeholder datasets are shown. The Supabase API route must be connected and reachable before this catalogue can display live manifest entries."),
-      h("p", { class: "fine" }, "Technical status: HTTP " + (response.status || "network error"))));
+      h("p", { class: "fine" }, "Technical status: HTTP " + (response.status || "network error")),
+      h("button", { class: "btn", onclick: () => location.reload() }, "Retry catalogue"))));
     root.append(card("What qualifies for this catalogue", "Verified import only",
       h("ul", {},
         h("li", {}, "Reviewed public-research data-use status and source citation."),
