@@ -168,12 +168,14 @@ def test_loaded_manifest_import_is_idempotent_without_deleting_or_reimporting(tm
 
         def execute(self, sql, params=None):
             self.statements.append(sql)
-            if "INSERT INTO genomeguard.variant_dataset_manifest" in sql:
-                assert "consent_basis='dataset_policy'" in sql
-                self.last_row = None  # ON CONFLICT ... WHERE refuses to overwrite loaded manifests
-            elif "SELECT id,sample_count,variant_count,genotype_call_count" in sql:
-                assert "consent_basis='dataset_policy'" in sql
-                self.last_row = (42, 2, 3, 5)
+            if "SELECT id, source_name, source_url, source_release, reference_assembly" in sql:
+                self.last_row = (
+                    42, args.source_name, args.source_url, args.source_release, args.assembly,
+                    digest, "approved_public_research", "dataset_policy", "loaded",
+                    {"reuse_statement_url": args.reuse_statement_url, "citation": args.citation},
+                )
+            elif "SELECT sample_count, variant_count, genotype_call_count" in sql:
+                self.last_row = (2, 3, 5)
             elif "DELETE FROM genomeguard." in sql:
                 raise AssertionError("idempotent import must not delete existing data")
 
@@ -268,8 +270,12 @@ def test_interrupted_import_resumes_after_last_committed_batch(tmp_path, monkeyp
 
         def execute(self, sql, params=None):
             self.statements.append(sql)
-            if "INSERT INTO genomeguard.variant_dataset_manifest" in sql:
-                self.last_row = (42,)
+            if "SELECT id, source_name, source_url, source_release, reference_assembly" in sql:
+                self.last_row = (
+                    42, args.source_name, args.source_url, args.source_release, args.assembly,
+                    digest, "approved_public_research", "dataset_policy", "loading",
+                    {"reuse_statement_url": args.reuse_statement_url, "citation": args.citation},
+                )
             elif "SELECT source_sample_id FROM genomeguard.dataset_samples" in sql:
                 self.rows = [("SAMPLE_A",), ("SAMPLE_B",)]
             elif "SELECT id,source_sample_id FROM genomeguard.dataset_samples" in sql:
@@ -343,3 +349,71 @@ def test_interrupted_import_resumes_after_last_committed_batch(tmp_path, monkeyp
     assert result["variant_count"] == 3
     assert result["genotype_call_count"] == 5
     assert not any("DELETE FROM genomeguard." in sql for sql in conn.cur.statements)
+
+def test_import_refuses_to_create_or_self_approve_a_manifest(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    path = _vcf(tmp_path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    args = SimpleNamespace(
+        dataset_key="unreviewed-release",
+        source_name="Unreviewed source",
+        source_url="https://data.example.org/unreviewed.vcf",
+        source_release="fixture-v1",
+        assembly="GRCh37",
+        vcf=path,
+        retrieved_at="2026-10-28T12:00:00Z",
+        reuse_statement_url="https://data.example.org/reuse",
+        citation="Test fixture citation",
+    )
+
+    class Cursor:
+        def __init__(self):
+            self.statements = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, sql, params=None):
+            self.statements.append(sql)
+            if "INSERT INTO genomeguard.variant_dataset_manifest" in sql:
+                raise AssertionError("importer must never create or self-approve its manifest")
+
+        def fetchone(self):
+            return None
+
+    class Transaction:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    class Connection:
+        def __init__(self):
+            self.cur = Cursor()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def transaction(self):
+            return Transaction()
+
+        def cursor(self):
+            return self.cur
+
+    conn = Connection()
+    monkeypatch.setenv("DATABASE_URL", "postgresql://test-only")
+    monkeypatch.setattr(vcf_import.psycopg, "connect", lambda *_args, **_kwargs: conn)
+
+    with pytest.raises(ImportValidationError, match="trusted data steward"):
+        vcf_import.import_to_database(args, digest, ["SAMPLE_A", "SAMPLE_B"])
+    assert any("SELECT id, source_name, source_url" in sql for sql in conn.cur.statements)
+    assert not any("INSERT INTO genomeguard.variant_dataset_manifest" in sql for sql in conn.cur.statements)
+
