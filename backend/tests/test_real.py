@@ -308,6 +308,22 @@ def test_production_bootstrap_preserves_dataset_policy_provenance():
         assert len(svc.provenance["consent_records_sha256"]) == 64
         assert svc.provenance["dataset_id"] == "test-public-source-policy"
 
+        # Dataset-wide release terms are not participant consent. No donor profile,
+        # consent mutation, withdrawal, or individual FHIR Consent may be fabricated.
+        from app.service import ServiceError
+        with pytest.raises(ServiceError) as profile:
+            svc.donor_profile(1)
+        assert profile.value.code == "not_found"
+        with pytest.raises(ServiceError) as withdrawal:
+            svc.donor_set_withdrawn(1, True)
+        assert withdrawal.value.code == "dataset_policy_withdrawal_unsupported"
+        with pytest.raises(ServiceError) as edit:
+            svc.donor_set_consent(1, {"use": "GRU", "modifiers": []})
+        assert edit.value.code == "dataset_policy_not_individual_consent"
+        with pytest.raises(ServiceError) as fhir:
+            svc.donor_consent_fhir(1)
+        assert fhir.value.code == "dataset_policy_not_individual_consent"
+
 
 # ---- the high-coverage release's pedigree: whitespace separated, different header names ----
 PED_HC = "\n".join([
