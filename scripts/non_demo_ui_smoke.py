@@ -44,7 +44,7 @@ def main() -> int:
             "consent_label": "Operator-supplied source-matched consent records",
             "relatives_label": "Relative exposure is a model",
             "agents_label": "Agents: built-in templates",
-            "encryption": "AES-256-GCM at rest",
+            "encryption": "AES-256-GCM protects selected application records; public cohort artifact is plaintext in the image. Private or controlled-access data are not supported by this deployment.",
         },
     }
 

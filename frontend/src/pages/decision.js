@@ -120,7 +120,12 @@ function toolSummary(tool, r) {
       return `${OUTCOME_LABEL[r.outcome] || r.outcome}${(r.reasons || []).length ? ": " + r.reasons.map(reasonText).join("; ") : ""}.`;
     case "consent_counts": {
       const c = r.consent || {};
-      return c.considered != null ? `${c.eligible} of ${c.considered} donors have consent that fits.` : "No consent count was recorded.";
+      return c.considered == null ? "No policy count was recorded."
+        : state.demo
+          ? `${c.eligible} of ${c.considered} synthetic donors pass simulated permission rules.`
+          : state.health?.provenance?.consent === "source_records"
+            ? `${c.eligible} of ${c.considered} samples pass source-matched consent rules.`
+            : `${c.eligible} of ${c.considered} samples pass the dataset-level policy mapping; this is not participant-specific consent.`;
     }
     case "risk_profile": {
       const b = r.risk_before || {}, a = r.risk_after || {};

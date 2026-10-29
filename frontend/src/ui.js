@@ -1,4 +1,5 @@
 // Small DOM helpers shared by every page. No framework, no build step.
+import { state } from "./api.js";
 export function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -129,8 +130,13 @@ export function workflow(d) {
   return [
     { id: "consent", t: "Consent agent", short: "Consent", kind: "agent",
       state: consentBad ? "bad" : "ok",
-      says: cons.considered == null ? "Checked the request against donor consent."
-        : `${cons.eligible} of ${cons.considered} donors have consent that fits this use.`,
+      says: cons.considered == null
+        ? (state.demo ? "Checked simulated participant permissions." : "Checked the dataset-level public-release policy; this is not participant-specific consent.")
+        : state.demo
+          ? `${cons.eligible} of ${cons.considered} synthetic donors pass simulated permission rules.`
+          : state.health?.provenance?.consent === "source_records"
+            ? `${cons.eligible} of ${cons.considered} samples pass the configured source-matched consent rules.`
+            : `${cons.eligible} of ${cons.considered} samples pass the dataset-level policy mapping; this is not participant-specific consent.`,
       note: notes.consent },
     { id: "risk", t: "Privacy risk agent", short: "Risk", kind: "agent",
       state: BAND_STATE[before.band] || "ok",

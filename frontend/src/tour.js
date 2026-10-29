@@ -34,7 +34,12 @@ const STEPS = [
       if (!r.ok) return { note: (r.data && (r.data.message || r.data.error)) || "The request could not be sent.", fail: true };
       ctx.study = r.data.id;
       const c = (r.data.risk || {}).consent || {};
-      return { hash: "#/request/" + r.data.id, note: `${OUTCOME_LABEL[r.data.outcome] || r.data.outcome}. ${c.considered ? `${c.eligible} of ${c.considered} donors had consent that fits. ` : ""}Look at the protections applied and the explanation.` };
+      const policyNote = !c.considered ? "" : state.demo
+        ? `${c.eligible} of ${c.considered} synthetic donors pass simulated permission rules. `
+        : state.health?.provenance?.consent === "source_records"
+          ? `${c.eligible} of ${c.considered} samples pass source-matched consent rules. `
+          : `${c.eligible} of ${c.considered} samples pass the dataset-level policy mapping; this is not participant-specific consent. `;
+      return { hash: "#/request/" + r.data.id, note: `${OUTCOME_LABEL[r.data.outcome] || r.data.outcome}. ${policyNote}Look at the protections applied and the explanation.` };
     } } },
   { title: "Relatives who never joined the study", hash: async () => "#/family/" + (ctx.study || (await latestId()) || 1),
     text: "Rare variants run in families. Each glowing dot is a relative of someone in the request who would be exposed if those variants were released. This is a model built from expected family sharing, and it is labelled that way." },

@@ -37,7 +37,7 @@ MAX_STEPS = 6
 
 TOOL_DOCS: dict[str, str] = {
     "case_summary": "What was asked (purpose, data level, tier) and what the rules decided.",
-    "consent_counts": "How many donors matched the request's consent, and why others were excluded.",
+    "consent_counts": "How many samples matched the configured use-policy filter, and why others were excluded.",
     "risk_profile": "Re-identification risk before and after protections (band, rare variants, "
                     "carriers, membership signal).",
     "family_exposure": "How many relatives of rare-variant carriers could be exposed (a model).",
@@ -47,7 +47,7 @@ TOOL_DOCS: dict[str, str] = {
 }
 WHY = {
     "case_summary": "Start with what was asked and what the rules decided.",
-    "consent_counts": "Check whether enough donors actually consented to this use.",
+    "consent_counts": "Check the configured use-policy filter and disclose that it is not proof of participant-specific consent.",
     "risk_profile": "See how risky the release is and what protections changed.",
     "family_exposure": "Rare variants were involved, so check which relatives could be exposed.",
     "requester_history": "Look at this account's past behaviour before advising.",
@@ -145,7 +145,7 @@ def evaluate(obs: dict[str, dict]) -> tuple[str, list[str], list[str]]:
         said.append("This release would cost more privacy budget than the account has left.")
     if eligible is not None and considered and eligible < 20:
         flags.append("small_consent_pool")
-        said.append(f"Only {eligible} of {considered} donors have consent that fits.")
+        said.append(f"Only {eligible} of {considered} samples meet the configured use-policy filter; this count is not proof of participant-specific consent.")
     if "record_level_needs_approval" in reasons:
         flags.append("record_level")
         said.append("Record-level access was requested; only transformed aggregates could ever "

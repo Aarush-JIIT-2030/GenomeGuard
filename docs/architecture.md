@@ -73,7 +73,7 @@ recommend `approve`, `deny` or `more_info`. Its guardrails are code, not instruc
 | `core/transform.py` | Ladder: drop rare variants, record to count, bin, cap variants, Laplace noise, last-resort boolean. Re-scores after each step, stops when risk is low. Epsilon ledger per requester per dataset. |
 | `core/anomaly.py` | Rate, near-duplicate probing, cohort narrowing, differencing guard, cumulative exposure. Weighted score to ok, warn, throttle, freeze. |
 | `core/audit_chain.py` | `hash = SHA256(canonical_json({idx, ts, actor, action, payload, prev_hash}))`. `verify()` returns `{ok, length, head_hash, first_broken_index}`. |
-| `core/crypto.py` | AES-256-GCM at rest, key per dataset derived from a master key with HKDF, ciphertext bound to dataset and donor id. |
+| `core/crypto.py` | AES-256-GCM protects selected encrypted application records; keys are derived per dataset with HKDF and ciphertext is bound to dataset and donor id. The public reference cohort artifact is plaintext in the container image, so this deployment is not suitable for private or controlled-access data. |
 | `agents/copilot.py` | The steward copilot described above: tool loop, rules baseline, safety caps. |
 | `core/federated.py` | Secure aggregation by additive secret sharing; federated allele frequencies and logistic regression across simulated hospitals. |
 | `data/synth.py`, `data/pedigree.py` | Synthetic cohort with real Mendelian transmission and a derived relationship graph. |
