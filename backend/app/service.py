@@ -889,7 +889,7 @@ def bootstrap(settings=None, p: Params = DEFAULT, store: Store | None = None,
         if not source_meta or source_meta.get("genotypes_real") is not True:
             raise ValueError("non-demo mode refuses cohorts without verified real-genotype provenance")
         if source_meta.get("consent_simulated") is not False:
-            raise ValueError("non-demo mode refuses simulated or missing data-use authorization")
+            raise ValueError("non-demo mode refuses simulated or missing consent/data-use authorization")
 
         # Dataset-level public-release terms can support aggregate public-data research,
         # but they are not participant consent and never authorize individual-level output.
