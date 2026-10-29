@@ -1010,7 +1010,8 @@ def bootstrap(settings=None, p: Params = DEFAULT, store: Store | None = None,
         "relatives": "kinship_model", "relatives_label": "Relative exposure is a model",
         "agents": "llm" if llm.available else "templates",
         "agents_label": "Agents: live LLM" if llm.available else "Agents: built-in templates",
-        "encryption": "AES-256-GCM at rest",
+        "encryption": ("AES-256-GCM protects selected application records; public cohort artifact is plaintext in the image. "
+                      "Private or controlled-access data are not supported by this deployment."),
     }
     if not store.requesters() and s.demo_mode:
         for name, role, level, inst, key in DEMO_REQUESTERS:

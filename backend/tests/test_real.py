@@ -303,6 +303,7 @@ def test_production_bootstrap_preserves_dataset_policy_provenance():
         assert svc.provenance["consent_records_matched"] == 0
         assert svc.provenance["dataset_policy_samples_scoped"] == 44
         assert svc.provenance["consent_policy"]["not_individual_consent"] is True
+        assert "public cohort artifact is plaintext" in svc.provenance["encryption"]
         assert "not participant-specific" in svc.provenance["consent_label"]
         assert len(svc.provenance["source_vcf_sha256"]) == 64
         assert len(svc.provenance["source_sample_metadata_sha256"]) == 64
