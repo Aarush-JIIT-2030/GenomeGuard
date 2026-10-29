@@ -49,13 +49,23 @@ def main() -> int:
                 if response.status < 400 or response.status == 403:
                     return
                 path = urlparse(response.url).path
+                is_json = "application/json" in response.headers.get("content-type", "")
+                # Readiness is deliberately HTTP 503 until production controls are verified.
+                # Only suppress that exact, machine-readable fail-closed response.
+                if response.status == 503 and path == "/health/ready" and is_json:
+                    try:
+                        body = response.json()
+                        if body.get("ready") is False and body.get("status") in ("not_ready", "migration_incomplete"):
+                            return
+                    except Exception:
+                        pass
                 # A fresh demo has no request history yet. The API intentionally returns
                 # JSON 404/not_found for a request ID that does not exist; test that the
                 # UI renders this empty-data state rather than treating it as a broken route.
                 expected_empty_record = (
                     response.status == 404
                     and re.fullmatch(r"/requests/\d+(?:/exposure)?", path)
-                    and "application/json" in response.headers.get("content-type", "")
+                    and is_json
                 )
                 if not expected_empty_record:
                     errors.append(f"HTTP {response.status} {response.url}")
