@@ -7,7 +7,7 @@ function readStorage(key) {
 }
 
 // Defer any remembered identity until the server confirms demo mode.
-export const state = { who: "", adminKey: "", demo: null, health: null, me: null, donors: [], donor: null };
+export const state = { who: "", adminKey: "", demo: null, health: null, readiness: null, me: null, donors: [], donor: null };
 
 export const isSteward = () => state.who === "steward";
 
@@ -79,8 +79,9 @@ export function disconnectKey() {
 }
 
 export async function boot() {
-  const h = await call("/health");
+  const [h, readiness] = await Promise.all([call("/health"), call("/health/ready")]);
   state.health = h.data;
+  state.readiness = readiness.data || { ready: false, checks: {} };
   state.demo = null;
   state.donors = [];
   if (!h.ok || !h.data?.demo_mode) {
