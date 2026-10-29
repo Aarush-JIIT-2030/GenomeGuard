@@ -6,9 +6,9 @@ const DISEASES = ["", "diabetes", "cancer", "cardiovascular", "asthma"];
 const LEVELS = ["frequency", "count", "boolean", "record"];
 
 const PRESETS = [
-  { name: "Diabetes frequency study", why: "A normal study: some donors are excluded by consent, rare variants are dropped.",
+  { name: "Diabetes frequency study", why: "Uses the documented dataset-level public-release policy mapping; rare variants are dropped.",
     body: { purpose: "disease_research", disease: "diabetes", data_level: "frequency", is_commercial: false, cohort_filter: {}, variant_filter: { min_maf: 0.1, limit: 20, include_planted: 2 } } },
-  { name: "Same study, commercial use", why: "Donors whose consent forbids commercial use drop out.",
+  { name: "Same study, commercial use", why: "Checks the dataset-level public-release terms for this use; this is not participant-specific consent.",
     body: { purpose: "disease_research", disease: "diabetes", data_level: "frequency", is_commercial: true, cohort_filter: {}, variant_filter: { min_maf: 0.1, limit: 20 } } },
   { name: "Narrow cohort", why: "One cohort and one population: small, so closer to the minimum size.",
     body: { purpose: "disease_research", disease: "diabetes", data_level: "frequency", is_commercial: false, cohort_filter: { cohort_id: "DIABETES-STUDY", population: "POP_A" }, variant_filter: { min_maf: 0.1, limit: 20 } } },
@@ -137,7 +137,7 @@ function formSection(out) {
   const form = h("div", { class: "form" },
     sel("purpose", "Purpose", PURPOSES, st.purpose),
     state.demo ? sel("disease", "Disease area", DISEASES, st.disease || "")
-      : inp("disease", "Disease identifier (required only for disease-specific consent)", st.disease || ""),
+      : inp("disease", "Disease identifier (for the research-purpose policy check)", st.disease || ""),
     sel("level", "Data level", LEVELS, st.data_level), inp("pop", "Population filter", ""), inp("coh", "Cohort filter", ""),
     inp("maf", "Minimum allele frequency", st.variant_filter.min_maf, "number"), inp("lim", "Number of variants", st.variant_filter.limit, "number"),
     state.demo ? inp("pl", "Rare demo variants to include", st.variant_filter.include_planted || 0, "number") : null,
@@ -169,8 +169,8 @@ function formSection(out) {
     const c = r.data, ex = c.excluded_by_reason || {};
     const total = c.considered || 1, out_ = Object.values(ex).reduce((a, b2) => a + b2, 0);
     preview.replaceChildren(
-      h("div", { class: "bar", role: "img", "aria-label": `${c.eligible} of ${c.considered} donors eligible` }, h("i", { class: "seg-ok", style: `width:${(100 * c.eligible) / total}%` }), h("i", { class: "seg-ex", style: `width:${(100 * out_) / total}%` })),
-      h("div", { class: "legend" }, h("span", {}, h("b", {}, c.eligible), ` of ${c.considered} donors have consent that fits this request`),
+      h("div", { class: "bar", role: "img", "aria-label": `${c.eligible} of ${c.considered} samples within policy mapping` }, h("i", { class: "seg-ok", style: `width:${(100 * c.eligible) / total}%` }), h("i", { class: "seg-ex", style: `width:${(100 * out_) / total}%` })),
+      h("div", { class: "legend" }, h("span", {}, h("b", {}, c.eligible), (state.demo ? ` of ${c.considered} synthetic donors pass simulated permission rules for this request` : ` of ${c.considered} samples pass the dataset-level public-release policy mapping for this request`)),
         Object.entries(ex).sort((a, b2) => b2[1] - a[1]).map(([k, v]) => h("span", {}, `${v} excluded: ${reasonText(k)}`))));
   }
   async function submit(b, btn) {
@@ -201,11 +201,11 @@ function formSection(out) {
   const reqs = state.demo ? state.demo.requesters : [];
   const att = reqs.find((r) => r.name === "Probe Account");
   const wrap = h("div", { class: "ledger" },
-    row("New request", state.demo ? "Fill in or pick a preset" : "Submit a query against the imported cohort and current consent rules",
+    row("New request", state.demo ? "Fill in or pick a preset" : "Submit a query against the public cohort and documented dataset policy mapping",
       state.demo ? h("div", { class: "presets" }, PRESETS.map((p) => h("button", { class: "ghost", title: p.why, onclick: () => load(p.body) }, p.name))) : null, form,
       h("div", { style: "margin-top:12px;display:flex;gap:10px;flex-wrap:wrap" }, submitBtn, probeBtn,
         att && state.who !== att.api_key ? h("button", { class: "ghost", onclick: () => { setWho(att.api_key); location.reload(); } }, "Switch to the probe account") : null), msg),
-    row("Consent check", "Updates as you type", preview));
+    row(state.demo ? "Simulated consent check" : "Dataset policy check", state.demo ? "Synthetic permissions; demonstration only" : "Dataset-level policy only, not participant-specific consent", preview));
   load(state.demo ? PRESETS[0].body : st);
   return wrap;
 }
