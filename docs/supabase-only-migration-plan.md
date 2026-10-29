@@ -1,6 +1,6 @@
 # Supabase-only backend migration
 
-Status checked: 2026-10-27. This is an implementation plan and status ledger, not a claim that the migration is complete.
+Status checked: 2026-10-28. This is an implementation plan and status ledger, not a claim that the migration is complete.
 
 ## Target
 
@@ -20,9 +20,9 @@ Status checked: 2026-10-27. This is an implementation plan and status ledger, no
 - Deployed the first Edge Function, `genomeguard-health` (version 1). It reads a non-sensitive deployment-status row and intentionally returns HTTP 503 / `migration_incomplete` until the API, cohort, and release gates are explicitly marked complete. This is a migration-status endpoint, not the GenomeGuard API.
 - Added `.github/workflows/supabase-smoke.yml` to validate the live function response and ensure the readiness gate remains fail-closed. The smoke workflow must pass before this part of the migration is considered verified.
 - Added `public.genomeguard_deployment_status` with RLS enabled, no browser-role grants, and an explicit server-role read policy. The service-role key is used only inside the function; it is not returned to clients.
-- Current security advisor reports RLS disabled on all 13 private application tables. Direct privilege checks confirm `anon` and `authenticated` have no schema USAGE or table SELECT/INSERT privileges, but RLS remains a critical defense-in-depth gap. A new reviewed migration enables RLS and revokes default browser-role grants; it has not been applied to production pending an explicit decision because it intentionally defines no client-facing policies. The performance advisor reports only unused-index informational findings after the donor-access foreign-key index was added.
+- On 28 October, migration `20261027010000_private_schema_rls.sql` was applied to `common 1` and recorded as `20261028180028` (`genomeguard_private_schema_rls`). Direct SQL verification confirms RLS enabled on all 13 GenomeGuard tables and no schema `USAGE` for `anon`, `authenticated`, or `service_role`. No browser-facing policies are defined because this schema is intended for a trusted server-side connection only. This is defense in depth, not a complete authorization model. The latest Supabase security advisor reports informational `rls_enabled_no_policy` findings for both GenomeGuard and BharatSim tables; preserve the isolation and document these findings rather than adding broad client policies. Performance findings include unused-index informational notices and must be reviewed rather than blindly deleting indexes.
 
-## Critical migration rule
+## Current project decision and safety boundary\n\nThe user has explicitly selected the existing Supabase project `common 1` (`hkyieaovolkethovyenb`) for this iteration. It is shared with BharatSim, so this is logical schema isolation, not a dedicated project-level security boundary. Keep all GenomeGuard DDL and data strictly inside the private `genomeguard` schema; do not modify `bharatsim` objects. No synthetic participant/cohort records have been inserted. The live GenomeGuard application tables are empty and the current Render API has not been connected to this database. Until a separately reviewed least-privilege server connection, durable persistence tests, backup/restore proof, and independent security/governance review are complete, keep the service in research-prototype status and do not accept private or controlled-access genomic data.\n\n## Critical migration rule
 
 The existing API is not a thin CRUD API. It contains the decision pipeline, disclosure-risk calculations, consent/policy filtering, epsilon accounting, anomaly monitoring, audit hash-chain, steward review, donor withdrawal, Beacon-style responses, and cohort-backed genotype queries. A generic database CRUD function would bypass these controls and is not an acceptable replacement.
 

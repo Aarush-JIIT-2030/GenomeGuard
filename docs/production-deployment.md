@@ -1,6 +1,6 @@
 # Hosted deployment record
 
-Last audited: 27 October 2026.
+Last audited: 28 October 2026.
 
 ## Current public research instance
 
@@ -35,14 +35,14 @@ The opt-in PostgreSQL adapter and migration/recovery tooling were merged through
 
 The intended Supabase project is `common 1`, ID `hkyieaovolkethovyenb`, with GenomeGuard isolated in the `genomeguard` schema. This Supabase project is shared with a separate `bharatsim` schema and has BharatSim migration records too; keep project-specific schemas, grants, migrations, and data isolated and never run a GenomeGuard migration against another schema. The live database contains 13 GenomeGuard application tables, but the cohort, donor, genotype, request, decision, and audit tables have zero rows; no production cohort was fabricated or imported. The backend is not connected to this database.
 
-**Critical live security finding:** a direct database query on 27 October reported Row Level Security disabled on all 13 GenomeGuard tables. The latest security-advisor response was inconsistent: it surfaced RLS-enabled/no-policy findings for the separate `bharatsim` schema but did not list the GenomeGuard disabled-RLS tables. Direct SQL confirms that `anon` and `authenticated` currently lack `USAGE` on the `genomeguard` schema, so the advisor's broad exposure wording is not identical to the observed schema grants. Treat the direct table-level result as the current evidence: RLS is still required defense in depth and must be enabled and verified. The reviewed defense-in-depth migration `supabase/migrations/20261027010000_private_schema_rls.sql` is merged in [PR #43](https://github.com/kaustubhdua/GenomeGuard/pull/43), but has **not** been applied to the live database. It revokes browser-role grants and enables RLS without client-facing policies; the intended access model is a trusted server-side PostgreSQL connection. Do not expose private genomic tables through the Supabase Data API.
+**Live security finding and follow-up:** the initial 27 October query found RLS disabled on all 13 GenomeGuard tables. On 28 October, the reviewed private-schema migration was applied and direct SQL verified RLS enabled on all 13 tables and no schema `USAGE` privilege for `anon`, `authenticated`, or `service_role`. The latest Supabase security advisor now reports `rls_enabled_no_policy` informational findings for GenomeGuard and BharatSim. GenomeGuard's no-policy state is intentional for this private schema: browser roles have no schema `USAGE` privilege and no Data API exposure is intended. This is defense in depth, not a complete authorization design. A dedicated database and reviewed server-side role/access model remain required. The reviewed defense-in-depth migration `supabase/migrations/20261027010000_private_schema_rls.sql` was applied to the live database on 28 October 2026 as migration `20261028180028` (`genomeguard_private_schema_rls`). Direct SQL verification confirmed RLS enabled on all 13 `genomeguard` tables and no `USAGE` privilege on the schema for `anon`, `authenticated`, or `service_role`. The migration is scoped to `genomeguard` and does not change the separate `bharatsim` schema. It intentionally creates no client-facing policies; the intended access model is a separately reviewed trusted server-side PostgreSQL connection. Do not expose private genomic tables through the Supabase Data API. This is defense in depth only: the Render backend is still not connected to this database, and production persistence is not verified.
 
 Required before production:
-1. Review and explicitly approve the private-schema RLS migration and server-side access model; apply it through the reviewed migration process, then rerun live privilege/RLS checks.
-2. Configure the actual Supabase PostgreSQL connection string as Render secret `GG_DATABASE_URL` using the provider dashboards. Never paste it into chat, commit it, or expose it to browser code.
-3. Verify migrations, least-privilege server connection, request ownership, concurrent writes, audit ordering, and failure behavior against the deployed service.
-4. Prove records survive restart and redeploy.
-5. Configure backup retention and recovery objectives; restore into an isolated database and run integrity/application acceptance checks.
+1. Configure the actual dedicated PostgreSQL connection string as Render secret `GG_DATABASE_URL` using the provider dashboards. Never paste it into chat, commit it, or expose it to browser code. Prefer a dedicated GenomeGuard-only database rather than a shared application project for production.
+2. Verify migrations, least-privilege server connection, request ownership, concurrent writes, audit ordering, and failure behavior against the deployed service.
+3. Prove records survive restart and redeploy.
+4. Configure backup retention and recovery objectives; restore into an isolated database and run integrity/application acceptance checks.
+5. Correct and verify Render's provider-side health-check path (`/health`) and run a live smoke test against the exact deployed commit.
 
 Do not use a temporary free database as a production fix. Render's free PostgreSQL databases expire after 30 days and do not provide managed backups. See [Render free-plan limitations](https://render.com/docs/free) and [Postgres recovery and backups](https://render.com/docs/postgresql-backups). Supabase's [production checklist](https://supabase.com/docs/guides/deployment/going-into-prod) recommends RLS with appropriate policies, reviewing security findings, load testing, and a verified backup strategy.
 
@@ -58,8 +58,8 @@ The frontend rewrites API requests to the Render service. Vercel is not a replac
 
 ## Explicit production blockers
 
-1. **Durable persistence and recovery:** no configured/verified database connection; no production backup/restore drill.
-2. **Database security:** RLS is disabled on all 13 live application tables; the merged migration remains unapplied.
+1. **Durable persistence and recovery:** Render has no verified `GG_DATABASE_URL`; the backend is not connected to Supabase and no production backup/restore drill has passed.
+2. **Database security and isolation:** RLS is now enabled on all 13 GenomeGuard tables and browser roles lack schema `USAGE`, but the trusted server connection, least-privilege runtime role, and production access path are not yet verified. Supabase project `common 1` is shared with BharatSim, so this is schema isolation rather than a dedicated production security boundary.
 3. **Institutional identity:** no institutional OIDC/SSO, verified organization membership, or institution-controlled MFA lifecycle. Provisioned API keys are not verified human identity.
 4. **Participant consent and withdrawal:** hosted public-data policy is dataset-level only. There is no authoritative participant-specific consent/withdrawal source.
 5. **External audit anchoring:** the local hash chain is tamper-evident but not immutable against an actor able to rewrite the database and recompute hashes. No independently controlled external anchor or trusted timestamp is configured.
