@@ -16,7 +16,7 @@ export async function render([id]) {
   const before = risk.before || {}, after = risk.assessment || {};
   root.append(h("a", { href: "#/requests" }, "All requests"),
     h("h1", { style: "margin-top:8px" }, "Request #" + d.id),
-    h("p", { class: "lede" }, `${d.requester} asked for ${q.data_level} data for ${(q.purpose || "").replaceAll("_", " ")}${q.disease ? " (" + q.disease + ")" : ""}${q.is_commercial ? ", commercial use" : ""}. ${when(d.ts)}`));
+    h("p", { class: "lede" }, `${d.requester} asked for ${q.data_level} data for ${(q.purpose || "").replaceAll("_", " ")}${q.disease ? (state.demo ? " (" + q.disease + ")" : " (topic label: " + q.disease + "; not a cohort phenotype)") : ""}${q.is_commercial ? ", commercial use" : ""}. ${when(d.ts)}`));
 
   const flow = workflow(d);
   root.append(h("section", { class: "card", style: "margin-bottom:14px" }, h("div", { class: "card-h" }, h("h2", { class: "card-title", style: "margin:0" }, "How the agents handled it"), h("span", {}, "Agents advise, rules decide")), pipeline(flow), h("div", { style: "margin-top:18px" }, timeline(flow))));

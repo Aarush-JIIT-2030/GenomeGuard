@@ -109,7 +109,7 @@ function listSection(res) {
       const q = r.request || {};
       const tr = h("tr", { class: "link", onclick: () => (location.hash = "#/request/" + r.id) },
         h("td", {}, a), h("td", {}, when(r.ts)), isSteward() ? h("td", {}, r.requester) : null,
-        h("td", {}, `${(q.purpose || "").replaceAll("_", " ")}${q.disease ? ", " + q.disease : ""}, ${q.data_level}`),
+        h("td", {}, `${(q.purpose || "").replaceAll("_", " ")}${q.disease ? (state.demo ? ", " + q.disease : ", topic: " + q.disease) : ""}, ${q.data_level}`),
         h("td", {}, badge(r.outcome), r.status === "held" ? h("span", { class: "pill warn", style: "margin-left:8px" }, "waiting for review") : null));
       return tr;
     }))));
@@ -137,7 +137,7 @@ function formSection(out) {
   const form = h("div", { class: "form" },
     sel("purpose", "Purpose", PURPOSES, st.purpose),
     state.demo ? sel("disease", "Disease area", DISEASES, st.disease || "")
-      : inp("disease", "Disease identifier (for the research-purpose policy check)", st.disease || ""),
+      : inp("disease", "Research topic label (metadata only; no disease phenotype data in this cohort)", st.disease || ""),
     sel("level", "Data level", LEVELS, st.data_level), inp("pop", "Population filter", ""), inp("coh", "Cohort filter", ""),
     inp("maf", "Minimum allele frequency", st.variant_filter.min_maf, "number"), inp("lim", "Number of variants", st.variant_filter.limit, "number"),
     state.demo ? inp("pl", "Rare demo variants to include", st.variant_filter.include_planted || 0, "number") : null,
