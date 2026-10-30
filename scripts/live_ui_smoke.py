@@ -43,9 +43,9 @@ def main() -> int:
             page = ctx.new_page()
             page.set_default_timeout(args.timeout)
             errors: list[str] = []
-            page.on("pageerror", lambda e: errors.append("JavaScript: " + str(e)))
+            page.on("pageerror", lambda e, errs=errors: errs.append("JavaScript: " + str(e)))
 
-            def record_http_error(response):
+            def record_http_error(response, errs=errors):
                 if response.status < 400 or response.status == 403:
                     return
                 path = urlparse(response.url).path
@@ -68,7 +68,7 @@ def main() -> int:
                     and is_json
                 )
                 if not expected_empty_record:
-                    errors.append(f"HTTP {response.status} {response.url}")
+                    errs.append(f"HTTP {response.status} {response.url}")
 
             page.on("response", record_http_error)
             for route in PAGES:

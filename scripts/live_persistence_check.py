@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-from tests.helpers import H, RESEARCHER, make_client
+from tests.helpers import RESEARCHER, H, make_client
 
 
 def validate(schema_root: Path, schema_name: str, payload: dict, label: str) -> None:

@@ -98,3 +98,55 @@ def test_agent_audit_record_has_hash_not_text_of_prompt():
     out = a.run({"outcome": "deny"})
     rec = out.audit()
     assert len(rec["prompt_sha256"]) == 64 and "prompt" not in {k for k in rec if k != "prompt_sha256"}
+
+
+def test_llm_gemini_provider_integration():
+    captured = {}
+
+    def gemini_mock(url, headers, body, timeout):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["body"] = body
+        return {
+            "candidates": [
+                {"content": {"parts": [{"text": "Gemini explanation: 453 of 600 donors."}]}}
+            ]
+        }
+
+    llm = LLM("AIzaSyFakeKey123", "gemini-2.5-flash", transport=gemini_mock)
+    assert llm.provider == "gemini"
+    assert llm.available is True
+    res = llm.complete("System instruction", "FACTS: {'donors': 453}")
+    assert res == "Gemini explanation: 453 of 600 donors."
+    assert "generativelanguage.googleapis.com" in captured["url"]
+    assert captured["headers"]["content-type"] == "application/json"
+    assert captured["body"]["contents"][0]["parts"][0]["text"] == "FACTS: {'donors': 453}"
+    assert captured["body"]["systemInstruction"]["parts"][0]["text"] == "System instruction"
+
+
+def test_llm_openai_provider_integration():
+    captured = {}
+
+    def openai_mock(url, headers, body, timeout):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["body"] = body
+        return {
+            "choices": [{"message": {"content": "OpenAI summary text."}}]
+        }
+
+    llm = LLM("sk-proj-fake123", "gpt-4o-mini", transport=openai_mock)
+    assert llm.provider == "openai"
+    assert llm.available is True
+    res = llm.complete("System prompt", "User prompt")
+    assert res == "OpenAI summary text."
+    assert "api.openai.com" in captured["url"]
+    assert "Bearer sk-proj-fake123" in captured["headers"]["authorization"]
+
+
+def test_llm_provider_resolution():
+    assert LLM("AIza123", "auto").provider == "gemini"
+    assert LLM("sk-ant-123", "auto").provider == "anthropic"
+    assert LLM("sk-123", "auto").provider == "openai"
+    assert LLM(None, "auto").provider == "none"
+    assert LLM(None, "auto").available is False

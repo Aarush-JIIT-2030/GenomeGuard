@@ -43,7 +43,7 @@ def main() -> int:
             page = ctx.new_page()
             page.set_default_timeout(args.timeout)
             errors: list[str] = []
-            page.on("pageerror", lambda exc: errors.append(str(exc)))
+            page.on("pageerror", lambda exc, errs=errors: errs.append(str(exc)))
             for route in PAGES:
                 try:
                     page.goto(base + "/" + route, wait_until="domcontentloaded")
