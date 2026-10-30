@@ -180,3 +180,23 @@ def test_store_backed_concurrent_appends_keep_a_contiguous_chain():
         assert [entry["idx"] for entry in chain.entries()] == list(range(1, 101))
     finally:
         store.db.close()
+
+
+def test_checkpoint_generation_and_verification():
+    c = make_chain(5, allow_tamper=True)
+    cp = c.checkpoint(signed_by="auditor-1")
+    assert cp["length"] == 5
+    assert len(cp["head_hash"]) == 64
+    assert cp["signed_by"] == "auditor-1"
+    assert "checkpoint_digest" in cp
+
+    res = c.verify_checkpoint(cp)
+    assert res["valid"] is True
+    assert res["chain_verification"]["ok"] is True
+
+    bad_cp = dict(cp)
+    bad_cp["checkpoint_digest"] = "0" * 64
+    assert c.verify_checkpoint(bad_cp)["valid"] is False
+
+    c.tamper(3)
+    assert c.verify_checkpoint(cp)["valid"] is False
