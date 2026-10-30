@@ -42,7 +42,7 @@ const STEPS = [
       return { hash: "#/request/" + r.data.id, note: `${OUTCOME_LABEL[r.data.outcome] || r.data.outcome}. ${policyNote}Look at the protections applied and the explanation.` };
     } } },
   { title: "Relatives who never joined the study", hash: async () => "#/family/" + (ctx.study || (await latestId()) || 1),
-    text: "Rare variants run in families. Each glowing dot is a relative of someone in the request who would be exposed if those variants were released. This is a model built from expected family sharing, and it is labelled that way." },
+    text: "Rare variants run in families. Each magenta dot is a relative of someone in the request who would be exposed if those variants were released. This is a model built from expected family sharing, and it is labelled that way." },
   { title: "A second account starts probing", hash: "#/anomalies",
     text: "This account sends many near-identical, narrowing queries, the classic way to isolate one person. Watch the monitor, the differencing guard and the freeze.",
     action: { label: "Run the probing account", run: async () => {

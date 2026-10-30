@@ -80,9 +80,9 @@ async function render() {
       destructive_tamper_demo_disabled: "Destructive demo controls disabled",
     }[key] || key));
     const banner = h("aside", { class: "notice warn release-gate-banner", role: "status", "aria-live": "polite" },
-      h("strong", {}, "Research prototype — production release blocked"),
+      h("strong", {}, "Research prototype: production release is blocked"),
       h("p", {}, "This instance uses public research data. It is not approved for private or controlled-access genomic data, clinical use, or production governance."),
-      blocked.length ? h("p", {}, "Outstanding release checks: " + blocked.join("; ") + ".") : h("p", {}, "Release checks have not been verified by the service."));
+      blocked.length ? [h("p", {}, "Outstanding release checks:"), h("ul", { class: "checks" }, blocked.map((t) => h("li", {}, t)))] : h("p", {}, "Release checks have not been verified by the service."));
     page.prepend(banner);
   }
   if (page instanceof Element) page.classList.add("page-enter");

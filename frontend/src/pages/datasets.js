@@ -1,4 +1,4 @@
-import { h, card, notice } from "../ui.js";
+import { h, card, notice, bands } from "../ui.js";
 import { loadPublicCatalogue } from "../catalogue-api.js";
 
 const fmt = (value) => Number(value || 0).toLocaleString("en-US");
@@ -16,7 +16,7 @@ function sourceLink(url) {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return h("span", { class: "muted" }, "Source link unavailable");
-    return h("a", { href: parsed.href, target: "_blank", rel: "noopener noreferrer", class: "dataset-source-link" }, "Open source", h("span", { "aria-hidden": "true" }, " ↗"));
+    return h("a", { href: parsed.href, target: "_blank", rel: "noopener noreferrer", class: "dataset-source-link" }, "Open source (new tab)");
   } catch {
     return h("span", { class: "muted" }, "Source link unavailable");
   }
@@ -36,15 +36,12 @@ function provenanceChecklist() {
 
 export async function render() {
   const root = h("div", { class: "stack dataset-page" });
-  root.append(h("section", { class: "card hero dataset-hero" },
-    h("div", { class: "dataset-hero-mark", "aria-hidden": "true" }, "⌘"),
-    h("div", {},
-      h("p", { class: "eyebrow" }, "RESEARCH DATA · PROVENANCE"),
-      h("h1", {}, "Dataset catalogue"),
-      h("p", { class: "lede" }, "A source-of-truth view of research datasets that have passed the import gate. Counts come from persisted records—not demo fixtures or reference metadata."),
-      h("div", { class: "dataset-hero-meta" },
-        h("span", { class: "status-dot" }, "Verified records only"),
-        h("span", { class: "muted" }, "Public research · Not clinical use")))));
+  root.append(h("section", { class: "card hero dataset-hero" }, h("div", { class: "hero-copy" },
+    h("h1", {}, "Dataset catalogue"),
+    h("p", { class: "lede" }, "The research datasets that have passed the import gate, with counts read from stored records. Nothing here comes from demo fixtures or reference metadata."),
+    h("div", { class: "dataset-hero-meta" },
+      h("span", { class: "status-dot" }, "Verified records only"),
+      h("span", { class: "muted" }, "Public research data. Not for clinical use.")))));
 
   const response = await loadPublicCatalogue("datasets");
   if (!response.ok) {
@@ -81,11 +78,9 @@ export async function render() {
 
   if (!datasets.length) {
     root.append(h("section", { class: "card dataset-empty" },
-      h("div", { class: "dataset-empty-symbol", "aria-hidden": "true" }, "∅"),
-      h("p", { class: "eyebrow" }, "NO VERIFIED IMPORTS"),
-      h("h2", {}, "The catalogue is empty—for now."),
+      h("h2", {}, "No dataset has been verified yet."),
       h("p", { class: "muted" }, "No dataset has completed the source-review, checksum, assembly, import and count-reconciliation process. That is different from having no chromosome reference metadata."),
-      h("a", { class: "btn", href: "#/chromosomes" }, "Explore chromosome reference metadata", h("span", { "aria-hidden": "true" }, " →"))));
+      h("a", { class: "btn", href: "#/chromosomes" }, "Explore chromosome reference metadata")));
     root.append(card("How a dataset becomes available", "A transparent, reproducible import gate", provenanceChecklist()));
     root.append(h("p", { class: "fine dataset-footnote" }, "Nothing here is synthetic. A dataset will appear only after a real import has been verified."));
     return root;
@@ -124,7 +119,7 @@ export async function render() {
           try { await navigator.clipboard.writeText(d.file_sha256); button.textContent = "Copied"; }
           catch { button.textContent = "Copy unavailable"; }
         },
-      }, shortHash(d.file_sha256))),
+      }, shortHash(d.file_sha256), bands(d.file_sha256, { width: 128, height: 10, label: "Banded fingerprint of the file checksum" }))),
       h("td", { class: "mono" }, fmt(d.sample_count)),
       h("td", { class: "mono" }, fmt(d.variant_count)),
       h("td", { class: "mono" }, fmt(d.genotype_call_count)),

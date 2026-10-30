@@ -3,19 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f7f0e1">
-<title>GenomeGuard — Research governance workspace</title>
+<meta name="theme-color" content="#F1F4F4">
+<title>GenomeGuard: Research governance workspace</title>
 <meta name="description" content="A research workspace for genomic dataset access governance, disclosure-risk assessment, query monitoring, and auditable decisions. Public-genotype research prototype; not for clinical use.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23fffbf3' stroke='%2314213d' stroke-width='2'/%3E%3Ccircle cx='11' cy='16' r='4' fill='%230f6e3a'/%3E%3Ccircle cx='21' cy='16' r='4' fill='%23e8821b'/%3E%3C/svg%3E">
-<script>try{var t=localStorage.getItem("gg_theme");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","light")}</script>
-<link rel="stylesheet" href="/static/src/style.css">
-<link rel="stylesheet" href="/static/src/field-theme.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Cpath fill='%2315122B' d='M5 0A5 5 0 0 1 10 5V10.5Q10 12.5 8 13.5Q10 14.5 10 16.5V23A5 5 0 0 1 0 23V16.5Q0 14.5 2 13.5Q0 12.5 0 10.5V5A5 5 0 0 1 5 0Z'/%3E%3Cpath fill='%23BE1B55' d='M19 0A5 5 0 0 1 24 5V10.5Q24 12.5 22 13.5Q24 14.5 24 16.5V23A5 5 0 0 1 14 23V16.5Q14 14.5 16 13.5Q14 12.5 14 10.5V5A5 5 0 0 1 19 0Z'/%3E%3C/svg%3E">
+<script>(function(){var t=null;try{t=localStorage.getItem("gg_theme")}catch(e){}if(t!=="dark"&&t!=="light"){t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",t)})()</script>
+<link rel="preload" href="/static/src/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/src/fonts.css">
+<link rel="stylesheet" href="/static/src/gg.css">
 </head>
 <body>
 <a class="skip" href="#view">Skip to content</a>
 <div class="shell" id="shell">
   <nav class="rail" aria-label="Main">
-    <a class="brand" href="#/overview"><span class="mark" aria-hidden="true"></span>GenomeGuard</a>
+    <a class="brand" href="#/overview">
+      <svg width="24" height="28" viewBox="0 0 24 28" aria-hidden="true" focusable="false">
+        <path d="M5 0A5 5 0 0 1 10 5V10.5Q10 12.5 8 13.5Q10 14.5 10 16.5V23A5 5 0 0 1 0 23V16.5Q0 14.5 2 13.5Q0 12.5 0 10.5V5A5 5 0 0 1 5 0Z" style="fill:var(--ink)"/>
+        <path d="M19 0A5 5 0 0 1 24 5V10.5Q24 12.5 22 13.5Q24 14.5 24 16.5V23A5 5 0 0 1 14 23V16.5Q14 14.5 16 13.5Q14 12.5 14 10.5V5A5 5 0 0 1 19 0Z" style="fill:var(--deny)"/>
+        <path d="M1 5.5h8M1 19.5h8M15 7.5h8M15 21h8" style="stroke:var(--rail);stroke-width:1.5;fill:none"/>
+      </svg>
+      GenomeGuard
+    </a>
     <div class="nav" id="nav"></div>
     <div class="who">
       <label for="who" id="who-label">Acting as</label>
@@ -26,10 +34,14 @@
           <option value="researcher">Researcher</option>
           <option value="steward">Data steward</option>
         </select>
-        <label for="api-key-input" style="margin-top:8px">Issued API key</label>
-        <input id="api-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste issued key">
-        <button id="connect-key" type="button" style="width:100%;margin-top:8px">Connect</button>
-        <button id="disconnect-key" class="ghost" type="button" style="width:100%;margin-top:6px">Disconnect</button>
+        <div class="stack-tight">
+          <div>
+            <label for="api-key-input">Issued API key</label>
+            <input id="api-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste issued key">
+          </div>
+          <button id="connect-key" type="button">Connect</button>
+          <button id="disconnect-key" class="ghost" type="button">Disconnect</button>
+        </div>
         <p class="fine" id="auth-status" role="status" aria-live="polite"></p>
       </div>
       <p class="fine" id="who-note"></p>
@@ -39,11 +51,11 @@
   <div class="scrim" id="scrim"></div>
   <div class="main">
     <header class="topbar">
-      <button class="iconbtn menubtn" id="menu" aria-label="Open menu" aria-expanded="false" aria-controls="nav">Menu</button>
+      <button class="iconbtn ghost menubtn" id="menu" aria-label="Open menu" aria-expanded="false" aria-controls="nav">Menu</button>
       <div class="crumb" id="crumb">GenomeGuard</div>
       <a class="iconbtn prov" id="prov" href="#/overview" title="Where this data comes from"></a>
-      <button class="iconbtn" id="open-cmdk" aria-label="Search Ctrl K">Search <span class="kbd">Ctrl K</span></button>
-      <button class="iconbtn" id="theme" aria-label="Switch colour theme">Theme</button>
+      <button class="iconbtn ghost" id="open-cmdk" aria-label="Search Ctrl K">Search <span class="kbd">Ctrl K</span></button>
+      <button class="iconbtn ghost" id="theme" aria-label="Switch colour theme">Theme</button>
     </header>
     <main id="view" tabindex="-1"><div class="skeleton" style="height:120px"></div></main>
   </div>

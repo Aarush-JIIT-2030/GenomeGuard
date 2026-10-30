@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- UI redesign: a biology and medical research-instrument look. The request pipeline is drawn as a
+  banded chromosome with the decision as the centromere, audit hashes and checksums get banded
+  fingerprints, the chromosome explorer gains coverage bars, and outcome colours are named after
+  histology stains. Self-hosted Familjen Grotesk and Spline Sans Mono (SIL Open Font License) replace
+  the previous theme; `style.css` and `field-theme.css` are replaced by `gg.css`. No behaviour,
+  route or API change.
 - Demo mode: **Undo demo tamper** on the Audit page removes the demo marker so the exercise can be
   repeated. Genuine edits to an entry stay detected.
 
