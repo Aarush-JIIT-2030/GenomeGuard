@@ -368,6 +368,18 @@ def create_app(svc: GenomeGuardService | None = None) -> Starlette:
     async def audit_head(request):
         return _j(S().audit.head())
 
+    @route("GET", "/audit/checkpoint", "Verifiable cryptographic checkpoint of audit head",
+           "public")
+    async def audit_checkpoint(request):
+        signer = request.query_params.get("signer", "system")
+        return _j(S().audit.checkpoint(signed_by=signer))
+
+    @route("POST", "/audit/verify-checkpoint", "Verify a checkpoint against internal digest and chain",
+           "public")
+    async def audit_verify_checkpoint(request):
+        body = await _body(request)
+        return _j(S().audit.verify_checkpoint(body))
+
     @route("POST", "/admin/tamper/{idx:int}", "DEMO ONLY: corrupt one audit entry", "admin")
     async def tamper(request):
         if not settings.demo_mode:
@@ -403,6 +415,14 @@ def create_app(svc: GenomeGuardService | None = None) -> Starlette:
         admin(request)
         q = request.query_params
         return _j(await run_in_threadpool(S().compliance_report, q.get("from"), q.get("to")))
+
+    @route("GET", "/reports/compliance/export",
+           "Downloadable cryptographic compliance evidence pack (DPDP, GDPR, HIPAA)", "admin")
+    async def compliance_export(request):
+        admin(request)
+        q = request.query_params
+        evidence = await run_in_threadpool(S().compliance_evidence_pack, q.get("from"), q.get("to"))
+        return _j(evidence)
 
     @route("GET", "/eval/results", "Stored red-team evaluation metrics", "public")
     async def eval_results(request):

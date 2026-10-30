@@ -154,6 +154,46 @@ class AuditChain:
     def verify(self, anchor: dict | None = None) -> dict:
         return verify(self.store.all(), anchor)
 
+    def checkpoint(self, signed_by: str = "system") -> dict:
+        """Create a verifiable, exportable cryptographic checkpoint of the current audit head.
+        This checkpoint can be published to an external transparency log, anchored in Git,
+        or archived by auditors to prevent undetected history rewriting or truncation."""
+        head_data = self.head()
+        now_ts = datetime.now(UTC).isoformat(timespec="microseconds")
+        body = {
+            "version": "1.0",
+            "length": head_data["length"],
+            "head_hash": head_data["head_hash"],
+            "timestamp": now_ts,
+            "signed_by": signed_by,
+        }
+        digest = hashlib.sha256(canonical_json(body).encode("ascii")).hexdigest()
+        body["checkpoint_digest"] = digest
+        return body
+
+    def verify_checkpoint(self, checkpoint: dict) -> dict:
+        """Verify that a given checkpoint matches both its internal digest and the current audit chain."""
+        try:
+            expected_body = {
+                "version": checkpoint.get("version", "1.0"),
+                "length": checkpoint["length"],
+                "head_hash": checkpoint["head_hash"],
+                "timestamp": checkpoint["timestamp"],
+                "signed_by": checkpoint.get("signed_by", "system"),
+            }
+            computed_digest = hashlib.sha256(canonical_json(expected_body).encode("ascii")).hexdigest()
+            if computed_digest != checkpoint.get("checkpoint_digest"):
+                return {"valid": False, "reason": "checkpoint_digest_mismatch"}
+        except (KeyError, TypeError):
+            return {"valid": False, "reason": "malformed_checkpoint"}
+
+        chain_verification = self.verify(anchor={"length": checkpoint["length"], "head_hash": checkpoint["head_hash"]})
+        return {
+            "valid": chain_verification["ok"],
+            "checkpoint": checkpoint,
+            "chain_verification": chain_verification,
+        }
+
     def tamper(self, idx: int) -> None:
         """DEMO ONLY: change one entry's payload without fixing the hashes, so the chain turns
         red at exactly this index. Refuses unless allow_tamper (GG_ALLOW_TAMPER_DEMO=true)."""

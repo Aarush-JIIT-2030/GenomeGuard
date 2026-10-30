@@ -256,3 +256,28 @@ def test_untamper_repeats_the_demo_but_cannot_repair_real_edits():
 def test_untamper_403_when_disabled():
     svc, c = make_client()
     assert c.post("/admin/untamper", headers=ADMIN).status_code == 403
+
+
+def test_checkpoint_and_compliance_export_endpoints():
+    svc, c = make_client()
+    cp_resp = c.get("/audit/checkpoint?signer=test-signer")
+    assert cp_resp.status_code == 200
+    cp = cp_resp.json()
+    assert cp["signed_by"] == "test-signer"
+    assert "checkpoint_digest" in cp
+
+    verify_resp = c.post("/audit/verify-checkpoint", json=cp)
+    assert verify_resp.status_code == 200
+    assert verify_resp.json()["valid"] is True
+
+    unauth = c.get("/reports/compliance/export")
+    assert unauth.status_code == 401
+
+    auth_resp = c.get("/reports/compliance/export", headers=ADMIN)
+    assert auth_resp.status_code == 200
+    pack = auth_resp.json()
+    assert pack["evidence_package_version"] == "1.0"
+    assert "dpdp_india" in pack["regulatory_evidence"]
+    assert "gdpr_art9" in pack["regulatory_evidence"]
+    assert "hipaa" in pack["regulatory_evidence"]
+    assert pack["audit_checkpoint"]["length"] >= cp["length"]
