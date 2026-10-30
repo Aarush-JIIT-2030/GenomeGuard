@@ -47,7 +47,7 @@ def main() -> int:
         check("landing page responds", status == 200 and "text/html" in content_type.lower())
         check("landing page identifies GenomeGuard", "GenomeGuard" in text and 'id="view"' in text)
 
-        for asset in ("/static/src/style.css", "/static/src/main.js"):
+        for asset in ("/static/src/gg.css", "/static/src/main.js"):
             status, body, _ = get(base, asset, args.timeout)
             check(f"static asset {asset}", status == 200 and len(body) > 100)
 

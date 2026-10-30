@@ -10,10 +10,9 @@ export async function render() {
 
 async function renderAssembly(assembly) {
   const root = h("div", { class: "stack" });
-  root.append(h("section", { class: "card hero" },
-    h("p", { class: "eyebrow" }, "REFERENCE & DATA COVERAGE"),
+  root.append(h("section", { class: "card hero" }, h("div", { class: "hero-copy" },
     h("h1", {}, "Chromosome explorer"),
-    h("p", { class: "lede" }, `Browse the ${assembly} human reference chromosomes and see where verified variant records are actually available. Reference coordinates are not genotype data, and an empty chromosome is never treated as analysed.`)));
+    h("p", { class: "lede" }, `Browse the ${assembly} human reference chromosomes and see where verified variant records are actually available. Reference coordinates are not genotype data, and an empty chromosome is never treated as analysed.`))));
 
   const response = await loadPublicCatalogue("chromosomes", { assembly });
   if (!response.ok) {
@@ -49,6 +48,19 @@ async function renderAssembly(assembly) {
   const search = h("input", { type: "search", placeholder: "Filter chromosomes (e.g. 22, X, MT)", "aria-label": "Filter chromosomes" });
   const onlyLoaded = h("input", { type: "checkbox", id: "only-loaded" });
   const list = h("div", { class: "table-wrap" });
+  const longest = Math.max(1, ...rows.map((r) => Number(r.length_bp) || 0));
+  // Bar length is the chromosome length relative to the longest one; the dark span is where stored variants were observed.
+  const coverageBar = (r, cov) => {
+    const len = Number(r.length_bp) || 0;
+    const outer = h("span", { class: "cov", style: `width:${Math.max(2, (len / longest) * 100).toFixed(1)}%`, role: "img",
+      "aria-label": cov.first_position == null ? "No variants observed" : `Variants observed from ${format(cov.first_position)} to ${format(cov.last_position)} of ${format(len)} base pairs` });
+    if (cov.first_position != null && len > 0) {
+      const left = (cov.first_position / len) * 100;
+      const width = Math.max(0.6, ((cov.last_position - cov.first_position) / len) * 100);
+      outer.append(h("i", { style: `left:${left.toFixed(2)}%;width:${width.toFixed(2)}%` }));
+    }
+    return outer;
+  };
   const paint = () => {
     const q = search.value.trim().toUpperCase().replace(/^CHR/, "");
     const filtered = rows.filter((r) => {
@@ -57,29 +69,29 @@ async function renderAssembly(assembly) {
     });
     const table = h("table", {},
       h("thead", {}, h("tr", {},
-        ...["Chromosome", "Type", "Reference length", "Variant records", "Observed position range", "Status"].map((v) => h("th", {}, v)))),
+        ...["Chromosome", "Type", "Reference length", "Variant records", "Where variants sit", "Status"].map((v) => h("th", {}, v)))),
       h("tbody", {}, filtered.map((r) => {
         const cov = r.data_coverage || {};
         const hasData = cov.variant_data_loaded === true;
-        const range = cov.first_position == null ? "—" : format(cov.first_position) + "–" + format(cov.last_position);
-        return h("tr", {},
+                return h("tr", {},
           h("th", { scope: "row" }, String(r.chromosome)),
           h("td", {}, KIND[r.kind] || r.kind || "Unknown"),
           h("td", { class: "mono" }, format(r.length_bp) + " bp"),
           h("td", { class: "mono" }, format(cov.variant_count)),
-          h("td", { class: "mono" }, range),
-          h("td", {}, h("span", { class: "tag" }, hasData ? "Variants loaded" : "No variants loaded")));
+          h("td", { class: "cov-cell" }, coverageBar(r, cov),
+            cov.first_position == null ? null : h("span", { class: "fine mono" }, format(cov.first_position) + " to " + format(cov.last_position))),
+          h("td", {}, h("span", { class: "tag" + (hasData ? " on" : "") }, hasData ? "Variants loaded" : "No variants loaded")));
       })));
     list.replaceChildren(table);
     if (!filtered.length) list.append(h("p", { class: "muted" }, "No chromosomes match this filter."));
   };
   search.addEventListener("input", paint);
   onlyLoaded.addEventListener("change", paint);
-  root.append(card("Chromosome coverage", "Live database counts — not inferred from the reference catalogue",
-    h("div", { class: "form-row", style: "display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px" },
-      h("label", { for: "assembly-filter", style: "display:flex;align-items:center;gap:8px" }, "Reference assembly", assemblySelect),
+  root.append(card("Chromosome coverage", "Live database counts, not inferred from the reference catalogue",
+    h("div", { class: "explorer-bar" },
+      h("label", { for: "assembly-filter" }, "Reference assembly", assemblySelect),
       search,
-      h("label", { for: "only-loaded", style: "display:flex;align-items:center;gap:8px" }, onlyLoaded, "Only chromosomes with variants")),
+      h("label", { for: "only-loaded" }, onlyLoaded, "Only chromosomes with variants")),
     list));
   paint();
   return root;

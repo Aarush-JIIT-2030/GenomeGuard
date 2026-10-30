@@ -1,5 +1,5 @@
 import { api, isSteward, state } from "../api.js";
-import { h, row, notice, errorText, copy } from "../ui.js";
+import { h, row, notice, errorText, copy, bands } from "../ui.js";
 
 const ANCHOR = "gg_anchor";
 const getAnchor = () => { try { return JSON.parse(localStorage.getItem(ANCHOR) || "null"); } catch { return null; } };
@@ -9,7 +9,7 @@ export async function render() {
   root.dataset.title = "Audit log";
   root.append(h("h1", {}, "Audit log"),
     h("p", { class: "lede" }, "Every request, decision, protection, alert and agent note is chained to the entry before it. Editing an entry without rebuilding later hashes breaks verification; a trusted external anchor helps detect a rewritten history."));
-  if (!isSteward()) { root.append(notice("warn", "The full log is for stewards. Anyone can still check that it is intact: "), h("p", {}, h("a", { href: "/audit/verify" }, "Verify the chain"), " · ", h("a", { href: "/audit/head" }, "Current head hash"))); return root; }
+  if (!isSteward()) { root.append(notice("warn", "The full log is for stewards. Anyone can still check that it is intact: "), h("p", {}, h("a", { href: "/audit/verify" }, "Verify the chain"), " and ", h("a", { href: "/audit/head" }, "Current head hash"))); return root; }
   const body = h("div", {});
   root.append(body);
   async function draw() {
@@ -27,7 +27,7 @@ export async function render() {
     win.forEach((e, i) => {
       const isBad = e.idx === bad;
       if (i) strip.append(h("div", { class: "link-glyph" + (isBad ? " bad" : "") }));
-      strip.append(h("div", { class: "blk" + (isBad ? " bad" : "") }, h("b", {}, "#" + e.idx), e.action, h("span", { class: "mono", title: e.hash }, "hash " + e.hash.slice(0, 12)), h("span", { class: "mono", title: e.prev_hash }, "prev " + e.prev_hash.slice(0, 12))));
+      strip.append(h("div", { class: "blk" + (isBad ? " bad" : "") }, bands(e.hash, { width: 148, height: 10, label: "Banded fingerprint of entry " + e.idx }), h("b", {}, "#" + e.idx), e.action, h("span", { class: "mono", title: e.hash }, "hash " + e.hash.slice(0, 12)), h("span", { class: "mono", title: e.prev_hash }, "prev " + e.prev_hash.slice(0, 12))));
     });
     const status = v.ok ? h("div", { class: "status ok" }, "Chain valid", h("span", { style: "font:14px var(--sans)" }, `${v.length} entries`))
       : h("div", { class: "status bad", role: "alert" }, bad != null ? `Broken at entry ${bad}` : "Anchor mismatch", h("span", { style: "font:14px var(--sans)" }, v.reason || ""));
@@ -38,13 +38,21 @@ export async function render() {
       h("button", { class: "danger", onclick: async () => { const r = await api("/admin/tamper/" + tIn.value, { method: "POST" }); if (!r.ok) body.prepend(notice("err", errorText(r))); else draw(); } }, "Tamper with entry"), tIn,
       h("button", { class: "ghost", onclick: async () => { const r = await api("/admin/untamper", { method: "POST" }); if (!r.ok) body.prepend(notice("err", errorText(r))); else draw(); } }, "Undo demo tamper"),
       h("span", { class: "muted" }, "Demo only. Undo removes just the demo marker, so the demo can be repeated; any other change to an entry stays detected.")) : null;
+    const entryNode = (e) => h("details", { class: "entry" }, h("summary", {}, h("b", {}, "#" + e.idx), h("span", {}, `${e.action} `, h("span", { class: "muted" }, e.actor)), h("span", { class: "muted mono" }, e.ts.slice(11, 19))), h("pre", {}, JSON.stringify(e.payload, null, 2)));
+    const PAGE = 30;
+    const entryList = h("div", {}, entries.slice(0, PAGE).map(entryNode));
+    if (entries.length > PAGE) {
+      const wrap = h("div", { style: "margin-top:12px" });
+      wrap.append(h("button", { class: "ghost", onclick: () => { wrap.replaceWith(...entries.slice(PAGE).map(entryNode)); } }, `Show the other ${entries.length - PAGE} entries`));
+      entryList.append(wrap);
+    }
     const ledger = h("div", { class: "ledger" },
       row("Status", "Recomputed on every view", status, a ? h("p", { class: "muted" }, `Also checked against your saved anchor (${a.length} entries): ${v.ok ? "matches" : "does not match"}.`) : null,
         h("div", { style: "margin-top:10px" }, h("button", { class: "ghost", onclick: draw }, "Verify now"))),
-      row("Head hash", `${head.length} entries`, h("code", { class: "hash" }, head.head_hash), h("div", { style: "display:flex;gap:8px;margin-top:8px;flex-wrap:wrap" }, copyBtn, anchorBtn),
+      row("Head hash", `${head.length} entries`, bands(head.head_hash, { width: 320, height: 18, label: "Banded fingerprint of the head hash" }), h("code", { class: "hash" }, head.head_hash), h("div", { style: "display:flex;gap:8px;margin-top:8px;flex-wrap:wrap" }, copyBtn, anchorBtn),
         h("p", { class: "muted" }, "Store this hash in a trusted location outside this database. Someone with full database access could rewrite every hash in the database, but cannot change your external copy. The chain makes tampering detectable, not impossible.")),
       row("The chain", bad != null ? "Red block = first broken entry" : "Latest entries, oldest at the left", strip, tamper),
-      row("Entries", "Newest first, click to expand", h("div", {}, entries.map((e) => h("details", { class: "entry" }, h("summary", {}, h("b", {}, "#" + e.idx), h("span", {}, `${e.action} `, h("span", { class: "muted" }, e.actor)), h("span", { class: "muted mono" }, e.ts.slice(11, 19))), h("pre", {}, JSON.stringify(e.payload, null, 2)))))));
+      row("Entries", "Newest first, click to expand", entryList));
     body.replaceChildren(ledger);
   }
   await draw();

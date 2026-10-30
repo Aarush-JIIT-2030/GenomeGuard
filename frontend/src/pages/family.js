@@ -20,7 +20,7 @@ export async function render([id]) {
     h("p", { style: "margin:0" }, h("b", {}, t.subjects), " people in the request carry a very rare variant. ", h("b", {}, t.exposed_relatives), " of their relatives are not in the request, yet would be exposed by it."),
     Object.keys(t.by_degree).length ? h("p", { class: "muted" }, "How close they are: " + Object.entries(t.by_degree).sort((a, b) => a[0] - b[0]).map(([k, v]) => `${v} ${v === 1 ? "relative shares" : "relatives share"} about ${sharePct(k)} of their DNA with a carrier on average (${DEGREE[k] || "a distant relative"})`).join("; ") + ".") : null));
   if (!g.families.length) ledger.append(row("Families", "", h("p", { class: "empty" }, "This request included no carriers of very rare variants, so no relatives are exposed.")));
-  else ledger.append(row("Families", "Dark = carrier in the request. Glowing = relative who would be exposed. Hollow = relative also in the request.",
+  else ledger.append(row("Families", "Dark = carrier in the request. Magenta = relative who would be exposed. Hollow = relative also in the request.",
     h("div", { class: "split" }, g.families.map(familyGraph))));
   ledger.append(row("How to read it", "", h("p", { style: "margin:0" }, g.note + " Percentages are expected averages of shared DNA from the family tree. Real sharing varies, especially for distant cousins.")));
   root.append(ledger);
@@ -46,7 +46,7 @@ function familyGraph(f) {
     const cls = nd.kind === "carrier" ? "node-carrier" : "node-relative " + (nd.exposed ? "exposed" : "safe");
     const g = svg("g", { class: cls }, svg("circle", { cx: x, cy: y, r: nd.kind === "carrier" ? 15 : 17, "stroke-width": 2 }),
       svg("title", {}, nd.kind === "carrier" ? "Carrier in this request" : `${nd.relation || "relative"}, ${(nd.shared * 100).toFixed(1)}% expected sharing${nd.exposed ? ", not in the request" : ", also in the request"}`));
-    if (nd.kind !== "carrier") g.append(svg("text", { x, y: y + 32, "text-anchor": "middle" }, nd.relation || "relative"));
+    if (nd.kind !== "carrier") g.append(svg("text", { x, y: y < cy ? y - 24 : y + 32, "text-anchor": "middle" }, nd.relation || "relative"));
     root.append(g);
   }
   return h("figure", { class: "fam", style: "margin:0" }, h("figcaption", { style: "padding:6px 10px;font-weight:600" }, f.family), root);

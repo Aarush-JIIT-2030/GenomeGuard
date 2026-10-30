@@ -22,6 +22,32 @@ export const svg = (tag, attrs, ...kids) => {
   return el;
 };
 
+// A banded "fingerprint" of a hash, drawn like a stained chromosome: one band per byte, shaded in
+// five steps the way G-banding is. It is a deterministic rendering of the real value, so any change
+// to the hash changes the picture. It never replaces the hash itself, which stays readable beside it.
+let fpCount = 0;
+const BAND_LEVELS = [0.05, 0.22, 0.42, 0.68, 0.92];
+export function bands(hex, { width = 160, height = 14, label } = {}) {
+  const clean = String(hex || "").toLowerCase().replace(/[^0-9a-f]/g, "");
+  if (clean.length < 16) return null;
+  const n = Math.min(32, Math.floor(clean.length / 2));
+  const id = "fp" + ++fpCount;
+  const w = width / n;
+  const root = svg("svg", {
+    class: "fp", width, height, viewBox: `0 0 ${width} ${height}`, role: "img", focusable: "false",
+    "aria-label": label || "Banded fingerprint of this hash",
+  });
+  const clip = svg("clipPath", { id }, svg("rect", { width, height, rx: height / 2 }));
+  const g = svg("g", { "clip-path": `url(#${id})` });
+  for (let i = 0; i < n; i++) {
+    const byte = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+    g.append(svg("rect", { x: (i * w).toFixed(2), width: (w + 0.4).toFixed(2), height, fill: "currentColor",
+      "fill-opacity": BAND_LEVELS[Math.min(4, Math.floor(byte / 52))] }));
+  }
+  root.append(clip, g, svg("rect", { x: 0.5, y: 0.5, width: width - 1, height: height - 1, rx: (height - 1) / 2, fill: "none", stroke: "var(--control)" }));
+  return root;
+}
+
 export const OUTCOME_LABEL = {
   permit: "Approved", permit_with_transform: "Approved with protections",
   deny: "Denied", escalate: "Held for human review",
@@ -111,8 +137,8 @@ export function lineChart({ series, xLabel, yLabel, xMin, xMax, yMin = 0, yMax =
 }
 
 export function legend(items) {
-  return h("div", { class: "legend", style: "margin-top:6px" }, items.map(([name, color]) =>
-    h("span", {}, h("span", { style: `display:inline-block;width:14px;height:4px;background:${color};margin-right:6px;vertical-align:middle` }), name)));
+  return h("div", { class: "legend", style: "margin-top:8px" }, items.map(([name, color]) =>
+    h("span", {}, h("span", { class: "sw", style: `background:${color}` }), name)));
 }
 
 // ---- agentic workflow components ----
@@ -158,28 +184,50 @@ export function workflow(d) {
   ];
 }
 
-// horizontal pipeline; call .classList.add('play') to run the reveal
-export function pipeline(stages, { play = true } = {}) {
-  const el = h("div", { class: "pipe" + (play ? " play" : ""), style: `--n:${stages.length}`, role: "list" },
-    stages.map((s, i) => h("div", { class: "stage " + (s.state || "ok") + (s.state === "idle" ? "" : " on"), style: `--i:${i}`, role: "listitem" },
-      h("div", { class: "node" }, String(i + 1)), h("div", { class: "t" }, s.short || s.t), s.d ? h("div", { class: "d" }, s.d) : null)));
-  el.replay = () => { el.classList.remove("play"); void el.offsetWidth; el.classList.add("play"); };
+// The request drawn as a chromosome: each stage is a band, and the access decision is the
+// centromere, the waist the arms hang from. State is shown in colour and in words, never colour alone.
+const STATE_WORD = { ok: "Passed", warn: "Caution", bad: "Flagged", hold: "Held", idle: "Waiting" };
+export function pipeline(stages, { play = true, caption = false, idle = "" } = {}) {
+  const says = caption ? h("p", { class: "pipe-says", "aria-live": "polite" }) : null;
+  const els = [];
+  const isDecide = (s, i) => s.id === "decide" || (!s.id && stages.length === 7 && i === 4);
+  function pick(i) {
+    els.forEach((e, k) => e.classList.toggle("picked", k === i));
+    const s = stages[i];
+    if (!says || !s) return;
+    if (!s.says) { says.textContent = idle; return; }
+    says.replaceChildren(...[h("b", {}, (s.t || s.short) + ". "), s.says, s.note ? h("span", { class: "note" }, "Agent note: " + s.note) : null].filter(Boolean));
+  }
+  stages.forEach((s, i) => {
+    const state = s.state || "idle";
+    const label = caption
+      ? h("button", { class: "t", type: "button", onclick: () => pick(i), onfocus: () => pick(i) }, s.short || s.t)
+      : h("div", { class: "t" }, s.short || s.t);
+    els.push(h("div", { class: "stage " + state + (state === "idle" ? "" : " on") + (isDecide(s, i) ? " cen" : ""), style: `--i:${i}`, role: "listitem" },
+      h("div", { class: "seg", "aria-hidden": "true" }),
+      h("div", {}, label, h("span", { class: "st" }, STATE_WORD[state] || ""), s.d ? h("div", { class: "d" }, s.d) : null)));
+  });
+  const strip = h("div", { class: "pipe" + (play ? " play" : ""), role: "list" }, els);
+  const el = says ? h("div", {}, strip, says) : strip;
+  const decideAt = stages.findIndex(isDecide);
+  if (caption) pick(decideAt >= 0 ? decideAt : 0);
+  el.replay = () => { strip.classList.remove("play"); void strip.offsetWidth; strip.classList.add("play"); };
   return el;
 }
 
-export function timeline(stages, { play = true } = {}) {
-  return h("ol", { class: "tl" + (play ? " play" : "") }, stages.map((s, i) =>
+export function timeline(stages) {
+  return h("ol", { class: "tl" }, stages.map((s, i) =>
     h("li", { class: s.state || "ok", style: `--i:${i}` },
       h("span", { class: "dot", "aria-hidden": "true" }, String(i + 1)),
-      h("div", { class: "who2" }, s.t, h("span", { class: "mode" }, s.kind === "agent" ? "advises" : "rule")),
+      h("div", { class: "who2" }, s.t, h("span", { class: "mode" }, s.kind === "agent" ? "Advises" : "Fixed rule")),
       h("p", { class: "says" }, s.says),
       s.note ? h("div", { class: "chips" }, h("span", { class: "pill agentnote" }, "Agent note: " + s.note)) : null)));
 }
 
 export function card(title, aside, ...kids) {
-  return h("section", { class: "card" }, title ? h("div", { class: "card-h" }, h("h2", { class: "card-title", style: "margin:0" }, title), aside ? h("span", {}, aside) : null) : null, kids);
+  return h("section", { class: "card" }, title ? h("div", { class: "card-h" }, h("h2", { class: "card-title" }, title), aside ? h("span", {}, aside) : null) : null, kids);
 }
 
 export function kpi(label, value, sub, tone) {
-  return h("div", { class: "card kpi" + (tone ? " o-" + tone : "") }, h("div", { class: "l" }, label), h("div", { class: "v" }, String(value)), sub ? h("div", { class: "s" }, sub) : null);
+  return h("div", { class: "kpi" + (tone ? " o-" + tone : "") }, h("div", { class: "l" }, label), h("div", { class: "v" }, String(value)), sub ? h("div", { class: "s" }, sub) : null);
 }

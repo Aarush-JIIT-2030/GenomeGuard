@@ -2,25 +2,32 @@
 
 ## Intent
 
-GenomeGuard is a research governance workspace, not a marketing landing page. The interface should feel calm, precise, and trustworthy while keeping provenance and limitations visible. The implementation retains the existing vanilla-JavaScript routes and interaction model; this change adds a CSS-only visual layer rather than introducing a new framework.
+GenomeGuard is a research governance workspace. It should read as a technical research instrument, the kind of tool a genomics core facility or a data access committee would run, and not as a paper, a landing page or a generic dashboard template. The routes and interaction model stay as they were (vanilla JavaScript, no build step); this change replaces the visual layer.
 
-## Reference influence
+## The idea: a genome browser crossed with a pathology lab
 
-The visual direction is informed by the public [NIRDHOOM repository](https://github.com/kaustubhdua/nihdhoom): warm cream surfaces, deep navy text, restrained India-green primary actions, saffron as a small accent, generous spacing, rounded but disciplined surfaces, and reduced-motion support. The theme is independently implemented for GenomeGuard's existing class names. No NIRDHOOM source assets or component code are copied into this stylesheet.
+- **Chromosome as pipeline.** A request passes through seven stages. They are drawn as one banded chromosome, G-band style, with the access decision as the centromere (the pinched waist). The figure is data: each band's colour is the stage's real outcome.
+- **Hashes as banded fingerprints.** Audit hashes and file checksums render as a barcode of G-band stripes next to the hex string, so a changed hash is visible at a glance. The hex is always shown too; the fingerprint is a visual aid, not a replacement.
+- **Coverage bars on the chromosome explorer.** Bar length is the chromosome's length relative to the longest one; the dark span is where stored variants were observed.
+- **Stain-named semantic colour.** Colours are named after histology stains and carry fixed meaning: light green = permit, orange G-band = protected (transformed), eosin = deny, hematoxylin violet = held for a human, DAPI blue = focus and links. The light theme is a light box (clean, cool grey-white); the dark theme is a fluorescence field.
 
-## Design decisions
+## Type
 
-- **Data-first hierarchy:** requests, decisions, audit verification, and provenance remain the primary content.
-- **Truth over decoration:** no added fake KPIs, synthetic activity, fabricated uptime indicator, or decorative chart data.
-- **Semantic color:** green means permitted/healthy, saffron means transformed/caution, red means denied/high risk, and navy-blue means escalation/review.
-- **Accessible interaction:** visible keyboard focus, responsive layouts, and reduced-motion handling are preserved.
-- **Low dependency surface:** CSS-only adaptation; no runtime dependency or third-party asset is introduced.
-- **Honest identity:** the hosted research mode continues to disclose that it uses public 1000 Genomes data and dataset-level policy provenance, not participant-specific consent or institutional identity verification.
+Familjen Grotesk for everything a person reads; Spline Sans Mono for data only (hashes, coordinates, counts). Both are SIL Open Font License, self-hosted in `frontend/src/fonts/` with their licences, so the page makes no third-party font request.
 
-## Validation
+## Principles kept from before
 
-The new stylesheet is linked after the existing base stylesheet so it can override design tokens without rewriting route code. CI must confirm JavaScript syntax, browser smoke routes, responsive behavior, and accessibility checks. A successful CI/build is not a substitute for independent visual inspection of the deployed URL.
+- **Truth over decoration:** no fake KPIs, activity or uptime. Empty and unreachable states say so.
+- **Provenance and limits stay visible:** the data-source banner, the "research prototype" release gate and the dataset-level policy labels are unchanged in meaning.
+- **Accessibility floor:** WCAG AA contrast in both themes, visible keyboard focus, 24 px minimum targets, no horizontal scroll from 320 px, reduced-motion respected. `make ui-smoke` enforces these.
+- **Restrained motion:** one orchestrated moment (the pipeline filling in on load, and on Replay). Nothing else moves unprompted.
+
+## Files
+
+- `frontend/src/fonts.css`, `frontend/src/fonts/`: self-hosted fonts.
+- `frontend/src/gg.css`: tokens (light and dark) and all components.
+- `frontend/src/ui.js`: `bands()`, `pipeline()`, `timeline()` and the other shared builders.
 
 ## Known boundary
 
-The stylesheet does not resolve database security, persistent storage, identity, consent, production deployment, backup/restore, or independent privacy/security review. These are tracked in the production readiness audit and must not be represented as completed by a visual polish change.
+This is a visual and interaction change. It does not resolve database security, persistent storage, identity, consent, production deployment, backup and restore, or independent privacy and security review. Those stay tracked in the production readiness audit.

@@ -1,5 +1,5 @@
 import { api, state, isSteward } from "../api.js";
-import { h, card, kpi, badge, pipeline, workflow, when, pct, notice } from "../ui.js";
+import { h, card, kpi, badge, bands, pipeline, workflow, when, pct, notice } from "../ui.js";
 import { startTour, tourAvailable } from "../tour.js";
 
 const DEMO_ROSTER = [
@@ -53,25 +53,34 @@ export async function render() {
   const latest = rows[0];
   const root = h("div", { class: "stack" });
 
-  // hero: the live pipeline for the latest decision, or an idle one
-  const idle = [["Consent"], ["Risk"], ["Protect"], ["Watch"], ["Decide"], ["Explain"], ["Record"]].map(([short]) => ({ short, state: "idle" }));
-  let stages = idle, caption = "Send a request and watch the agents work.";
+  // hero: the latest request drawn as a chromosome of stages, or an idle one
+  const idle = [["consent", "Consent"], ["risk", "Risk"], ["protect", "Protect"], ["monitor", "Watch"], ["decide", "Decide"], ["explain", "Explain"], ["audit", "Record"]]
+    .map(([id, short]) => ({ id, short, state: "idle" }));
+  let stages = idle, figureHead = "No requests yet";
   if (latest) {
     const full = await api("/requests/" + latest.id);
-    if (full.ok) { stages = workflow(full.data).map((s) => ({ ...s, d: "" })); caption = `Latest request, #${latest.id}: ${(latest.request || {}).data_level} data for ${((latest.request || {}).purpose || "").replaceAll("_", " ")}.`; }
+    if (full.ok) {
+      stages = workflow(full.data);
+      const q = latest.request || {};
+      figureHead = `Latest request #${latest.id}: ${q.data_level} data for ${(q.purpose || "").replaceAll("_", " ")}`;
+    }
   }
-  const pipe = pipeline(stages, { play: !!latest });
+  const pipe = pipeline(stages, { play: !!latest, caption: true, idle: "Send a request and each stage fills in here, ending at the access decision." });
   const hero = h("section", { class: "card hero" },
-    h("h1", { style: "margin:0 0 6px" }, "Govern genomic data access with auditable decisions."),
-    h("p", { class: "lede" }, state.demo
-      ? "GenomeGuard demonstrates a research-access workflow with simulated participant permissions, risk checks, output protections and a tamper-evident audit log. Demo records are synthetic and are not real participant consent. Rules decide; advisory components do not grant access."
-      : "This hosted research instance evaluates requests against a documented public-dataset policy, applies heuristic risk checks and output protections, and records decisions in a tamper-evident audit log. It uses public 1000 Genomes data; policy provenance is dataset-level, not participant-specific consent. Explanations use built-in templates, and no live LLM is configured."),
-    h("div", { style: "display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px" },
-      tourAvailable() ? h("button", { onclick: startTour }, "Guided walkthrough") : null,
-      h("a", { class: tourAvailable() ? "btn ghost" : "btn", href: "#/requests" }, isSteward() ? "Review requests" : "Send a request"),
-      state.demo ? h("a", { class: "btn ghost", href: "#/donor" }, "Participant view") : null),
-    pipe, h("p", { class: "muted", style: "margin:12px 0 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap" }, caption,
-      latest ? h("button", { class: "ghost", onclick: () => pipe.replay() }, "Replay workflow") : null));
+    h("div", { class: "hero-copy" },
+      h("h1", {}, "Every request for genomic data gets a decision, a reason, and a record."),
+      h("p", { class: "lede" }, state.demo
+        ? "GenomeGuard demonstrates a research-access workflow with simulated participant permissions, risk checks, output protections and a tamper-evident audit log. Demo records are synthetic and are not real participant consent. Rules decide; advisory components do not grant access."
+        : "This hosted research instance evaluates requests against a documented public-dataset policy, applies heuristic risk checks and output protections, and records decisions in a tamper-evident audit log. It uses public 1000 Genomes data; policy provenance is dataset-level, not participant-specific consent. Explanations use built-in templates, and no live LLM is configured."),
+      h("div", { class: "hero-actions" },
+        tourAvailable() ? h("button", { onclick: startTour }, "Guided walkthrough") : null,
+        h("a", { class: tourAvailable() ? "btn ghost" : "btn", href: "#/requests" }, isSteward() ? "Review requests" : "Send a request"),
+        state.demo ? h("a", { class: "btn ghost", href: "#/donor" }, "Participant view") : null)),
+    h("div", { class: "hero-figure" },
+      h("div", { class: "hero-figure-h" },
+        h("span", {}, latest ? h("b", {}, figureHead) : figureHead),
+        latest ? h("button", { class: "ghost", onclick: () => pipe.replay() }, "Replay") : null),
+      pipe));
   root.append(hero);
 
   if (!readiness.ok || readiness.data?.ready !== true) {
@@ -81,7 +90,7 @@ export async function render() {
     root.append(notice("warn",
       h("strong", {}, "Production readiness is not verified."),
       h("p", { class: "muted" }, "This deployment must be treated as a research prototype. A running API or successful page load does not prove durable storage, institutional identity, participant consent, or safe data release."),
-      failed.length ? h("p", { class: "fine" }, "Open release checks: " + failed.join("; ") + ".")
+      failed.length ? [h("p", { class: "fine" }, "Open release checks:"), h("ul", { class: "checks" }, failed.map((t) => h("li", {}, t)))]
         : h("p", { class: "fine" }, "The readiness endpoint is unavailable, so the system cannot verify its release controls.")));
   }
 
@@ -91,21 +100,23 @@ export async function render() {
       h("dt", {}, "Genotypes"), h("dd", {}, pv.genotypes_label),
       h("dt", {}, "Consent / use-policy basis"), h("dd", {}, pv.consent_label + (
         pv.consent === "simulated"
-          ? " — simulated records; not valid participant consent."
+          ? ". These are simulated records and not valid participant consent."
           : pv.consent === "source_policy"
-            ? " — mapped from public dataset terms; not participant-specific consent and not independently legally reviewed."
-            : " — imported source records; legal validity is not independently verified.")),
+            ? ". Mapped from public dataset terms; this is not participant-specific consent and has not been independently legally reviewed."
+            : ". Imported source records; their legal validity is not independently verified.")),
       h("dt", {}, "Relatives"), h("dd", {}, pv.relatives_label),
       h("dt", {}, "Agents"), h("dd", {}, pv.agents_label + ". They never see genotypes."),
       h("dt", {}, "Storage"), h("dd", {}, pv.encryption))));
   const chain = verify.ok ? verify.data : null;
   const evd = ev.ok ? ev.data : null;
   const diff = evd && evd.differencing ? evd.differencing.accuracy : null;
-  root.append(h("div", { class: "grid g4" },
+  root.append(h("div", { class: "readout" },
     kpi("Requests handled", rows.length, rows.length ? `${count("permit") + count("permit_with_transform")} released` : "none yet"),
     kpi("Held for a human", count("escalate"), "waiting for a steward", count("escalate") ? "escalate" : null),
     kpi("Denied", count("deny"), "blocked before any release", count("deny") ? "deny" : null),
-    kpi("Audit chain", chain ? (chain.ok ? "Intact" : "Broken") : "n/a", chain ? `${chain.length} entries` : "", chain && !chain.ok ? "deny" : "permit")));
+    kpi("Audit chain", chain ? (chain.ok ? "Intact" : "Broken") : "n/a",
+      chain ? h("span", {}, `${chain.length} entries`, bands(chain.head_hash, { width: 132, height: 12, label: "Banded fingerprint of the audit chain head hash" })) : "",
+      chain && !chain.ok ? "deny" : "permit")));
 
   const feed = rows.length
     ? h("ul", { class: "feed" }, rows.slice(0, 6).map((r) => h("li", {}, badge(r.outcome), h("a", { href: "#/request/" + r.id }, `#${r.id} ${((r.request || {}).purpose || "").replaceAll("_", " ")}, ${(r.request || {}).data_level}`), h("span", { class: "m" }, when(r.ts)))))
@@ -123,7 +134,7 @@ export async function render() {
 
   const roster = state.demo ? DEMO_ROSTER : RESEARCH_ROSTER;
   root.append(card(state.demo ? "Demo workflow components" : "Research workflow components",
-    state.demo ? "Simulated demonstration — not real participant governance" : "Implemented capabilities and their current limits",
+    state.demo ? "Simulated demonstration, not real participant governance" : "Implemented capabilities and their current limits",
     h("div", { class: "grid g2" }, roster.map(([n, t]) => h("div", {}, h("b", {}, n), h("p", { class: "muted", style: "margin:2px 0 0" }, t))))));
   return root;
 }

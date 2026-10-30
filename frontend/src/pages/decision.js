@@ -43,11 +43,11 @@ export async function render([id]) {
   if (before.band) {
     ledger.append(row("Re-identification risk", "Before and after protections",
       h("div", { class: "shift" }, h("div", {}, h("div", { class: "muted" }, "As requested"), lane(before.band)),
-        h("span", { class: "arrow", "aria-hidden": "true" }, "→"), h("div", {}, h("div", { class: "muted" }, "As released"), lane(after.band || before.band))),
+        h("span", { class: "arrow", "aria-hidden": "true" }), h("div", {}, h("div", { class: "muted" }, "As released"), lane(after.band || before.band))),
       (before.band_reasons || []).length ? h("p", { class: "muted" }, "Why it was flagged: " + before.band_reasons.map(reasonText).join("; ")) : null,
       h("dl", { class: "facts", style: "margin-top:10px" },
         h("dt", {}, "Donors in release"), h("dd", {}, String(after.n ?? before.n)),
-        h("dt", {}, "Variants requested → released"), h("dd", {}, `${before.n_variants} → ${after.n_variants}`),
+        h("dt", {}, "Variants requested, then released"), h("dd", {}, `${before.n_variants} requested, ${after.n_variants} released`),
         after.membership_signal != null ? [h("dt", {}, "Membership signal"), h("dd", {}, Number(after.membership_signal).toFixed(2))] : null)));
   }
 
