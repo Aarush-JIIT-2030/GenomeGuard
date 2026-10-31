@@ -8,7 +8,7 @@ export async function render() {
   const root = h("div", {});
   root.dataset.title = "Audit log";
   root.append(h("h1", {}, "Audit log"),
-    h("p", { class: "lede" }, "Every request, decision, protection, alert and agent note is chained to the entry before it. Editing an entry without rebuilding later hashes breaks verification; a trusted external anchor helps detect a rewritten history."));
+    h("p", { class: "lede" }, "Each entry is chained to the one before it, so any edit breaks verification."));
   if (!isSteward()) { root.append(notice("warn", "The full log is for stewards. Anyone can still check that it is intact: "), h("p", {}, h("a", { href: "/audit/verify" }, "Verify the chain"), " and ", h("a", { href: "/audit/head" }, "Current head hash"))); return root; }
   const body = h("div", {});
   root.append(body);

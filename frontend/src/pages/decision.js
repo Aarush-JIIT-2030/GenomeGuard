@@ -1,5 +1,5 @@
 import { api, isSteward, state } from "../api.js";
-import { h, row, badge, lane, when, notice, errorText, reasonText, stepText, OUTCOME_LABEL, pct, workflow, timeline, pipeline } from "../ui.js";
+import { h, row, badge, lane, when, notice, errorText, reasonText, stepText, OUTCOME_LABEL, pct, workflow, timeline, pipeline, fold } from "../ui.js";
 
 export async function render([id]) {
   if (!state.demo && !state.who && !state.adminKey) {
@@ -71,8 +71,8 @@ export async function render([id]) {
   if (d.release) {
     const rel = d.release, vals = rel.values || [], ids = rel.variant_ids || [];
     ledger.append(row("Released data", `${rel.level}, ${vals.length} variants`,
-      h("div", { class: "tablewrap" }, h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Variant"), h("th", { class: "num" }, rel.level === "frequency" ? "Allele frequency" : rel.level === "count" ? "Allele count" : "Present"))),
-        h("tbody", {}, vals.slice(0, 30).map((v, i) => h("tr", {}, h("td", {}, "v" + ids[i]), h("td", { class: "num" }, typeof v === "boolean" ? (v ? "yes" : "no") : String(v))))))),
+      fold(`Show the ${vals.length} released values`, h("div", { class: "tablewrap" }, h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Variant"), h("th", { class: "num" }, rel.level === "frequency" ? "Allele frequency" : rel.level === "count" ? "Allele count" : "Present"))),
+        h("tbody", {}, vals.slice(0, 30).map((v, i) => h("tr", {}, h("td", {}, "v" + ids[i]), h("td", { class: "num" }, typeof v === "boolean" ? (v ? "yes" : "no") : String(v)))))))),
       vals.length > 30 ? h("p", { class: "muted" }, `Showing 30 of ${vals.length}.`) : null,
       h("p", { class: "muted" }, "Aggregate only. No individual genotypes, donor identities or cohort membership are ever returned.")));
   } else if (d.status !== "held") {
@@ -98,7 +98,7 @@ function stewardPanel(d, before, after, tr) {
       h("dt", {}, "Relatives exposed (simulated)"), h("dd", {}, String(rel.total ?? 0)),
       h("dt", {}, "Expected shared DNA, summed"), h("dd", {}, rel.expected_shared_dna != null ? Number(rel.expected_shared_dna).toFixed(2) : "n/a")),
     rel.total ? h("p", {}, h("a", { href: "#/family/" + d.id }, "Open the family tree"), " to see which relatives would be exposed.") : null,
-    Object.keys(notes).length ? h("div", {}, h("h3", { style: "margin-top:12px" }, "Agent notes (advisory)"), h("ul", { class: "plain" }, Object.entries(notes).filter(([, t]) => t).map(([k, t]) => h("li", {}, h("b", {}, k + ": "), t)))) : null,
+    Object.keys(notes).length ? fold("Agent notes (advisory, repeated from the timeline above)", h("ul", { class: "plain" }, Object.entries(notes).filter(([, t]) => t).map(([k, t]) => h("li", {}, h("b", {}, k + ": "), t)))) : null,
     d.status === "held" && d.needs_human ? h("div", { style: "margin-top:12px;display:flex;gap:10px" }, h("button", { onclick: () => review(true) }, "Approve release"), h("button", { class: "danger", onclick: () => review(false) }, "Deny")) : null,
     d.reviewed_by ? h("p", { class: "muted" }, `Reviewed by ${d.reviewed_by} on ${when(d.reviewed_at)}.`) : null, msg);
 }

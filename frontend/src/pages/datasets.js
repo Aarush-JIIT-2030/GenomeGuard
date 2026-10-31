@@ -45,7 +45,7 @@ async function renderCatalogue(sample) {
   const root = h("div", { class: "stack dataset-page" });
   root.append(h("section", { class: "card hero dataset-hero" }, h("div", { class: "hero-copy" },
     h("h1", {}, "Dataset catalogue"),
-    h("p", { class: "lede" }, "The research datasets that have passed the import gate, with counts read from stored records. Nothing here comes from demo fixtures or reference metadata."),
+    h("p", { class: "lede" }, "Datasets that have passed the import gate, with counts read from stored records."),
     h("div", { class: "dataset-hero-meta" },
       h("span", { class: "status-dot" }, "Verified records only"),
       h("span", { class: "muted" }, "Public research data. Not for clinical use.")))));

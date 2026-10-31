@@ -14,7 +14,7 @@ export async function render() {
     state.donors.map((d) => h("option", { value: d.id }, d.label)));
   pick.value = state.donor.id;
   root.append(h("h1", {}, "Your data, in your hands"),
-    h("p", { class: "lede" }, "This view illustrates participant consent controls. The records are simulated; changes affect only this local demonstration and are not real-world consent actions."),
+    h("p", { class: "lede" }, "Participant consent controls. Records are simulated, and changes affect only this demonstration."),
     h("label", { class: "f", for: "persona", style: "font-family:var(--sans)" }, "Simulated participant (not a real consent record)", pick), body);
   const flash = h("div", { "aria-live": "polite" });
 

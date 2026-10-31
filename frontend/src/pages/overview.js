@@ -1,5 +1,5 @@
 import { api, state, isSteward } from "../api.js";
-import { h, card, kpi, badge, bands, pipeline, workflow, when, pct, notice } from "../ui.js";
+import { h, card, kpi, badge, bands, pipeline, workflow, when, pct, notice, fold } from "../ui.js";
 import { sampleStages } from "../sample-data.js";
 import { startTour, tourAvailable } from "../tour.js";
 
@@ -73,8 +73,8 @@ export async function render() {
     h("div", { class: "hero-copy" },
       h("h1", {}, "Every request for genomic data gets a decision, a reason, and a record."),
       h("p", { class: "lede" }, state.demo
-        ? "GenomeGuard demonstrates a research-access workflow with simulated participant permissions, risk checks, output protections and a tamper-evident audit log. Demo records are synthetic and are not real participant consent. Rules decide; advisory components do not grant access."
-        : "This hosted research instance evaluates requests against a documented public-dataset policy, applies heuristic risk checks and output protections, and records decisions in a tamper-evident audit log. It uses public 1000 Genomes data; policy provenance is dataset-level, not participant-specific consent. Explanations use built-in templates, and no live LLM is configured."),
+        ? "A research-access workflow with simulated permissions, risk checks, output protections and a tamper-evident audit log. Rules decide; advisory components never grant access."
+        : "A research-access workflow on public 1000 Genomes data: policy checks, risk checks, output protections and a tamper-evident audit log. No live language model is configured."),
       h("div", { class: "hero-actions" },
         tourAvailable() ? h("button", { onclick: startTour }, "Guided walkthrough") : null,
         h("a", { class: tourAvailable() ? "btn ghost" : "btn", href: "#/requests" }, isSteward() ? "Review requests" : "Send a request"),
@@ -91,25 +91,23 @@ export async function render() {
     const failed = Object.entries(checks).filter(([, ok]) => ok !== true)
       .map(([key]) => READINESS_LABELS[key] || key.replaceAll("_", " "));
     root.append(notice("warn",
-      h("strong", {}, "Production readiness is not verified."),
-      h("p", { class: "muted" }, "This deployment must be treated as a research prototype. A running API or successful page load does not prove durable storage, institutional identity, participant consent, or safe data release."),
-      failed.length ? [h("p", { class: "fine" }, "Open release checks:"), h("ul", { class: "checks" }, failed.map((t) => h("li", {}, t)))]
-        : h("p", { class: "fine" }, "The readiness endpoint is unavailable, so the system cannot verify its release controls.")));
+      h("strong", {}, "Research prototype: production readiness is not verified."),
+      h("p", { class: "muted" }, "A running API does not prove durable storage, institutional identity, participant consent or safe data release."),
+      failed.length ? fold(`${failed.length} open release checks`, h("ul", { class: "checks" }, failed.map((t) => h("li", {}, t))))
+        : h("p", { class: "fine" }, "The readiness endpoint is unavailable, so release controls cannot be verified.")));
   }
 
   const pv = hl.provenance || {};
   if (pv.genotypes) root.append(card("Where the data comes from", "Labelled so nothing is overstated",
     h("dl", { class: "facts" },
       h("dt", {}, "Genotypes"), h("dd", {}, pv.genotypes_label),
-      h("dt", {}, "Consent / use-policy basis"), h("dd", {}, pv.consent_label + (
-        pv.consent === "simulated"
-          ? ". These are simulated records and not valid participant consent."
-          : pv.consent === "source_policy"
-            ? ". Mapped from public dataset terms; this is not participant-specific consent and has not been independently legally reviewed."
-            : ". Imported source records; their legal validity is not independently verified.")),
+      h("dt", {}, "Consent basis"), h("dd", {}, pv.consent_label + (
+        pv.consent === "simulated" ? " (not valid participant consent)"
+          : pv.consent === "source_policy" ? " (dataset-level, not participant-specific)"
+            : " (imported, not independently verified)")),
       h("dt", {}, "Relatives"), h("dd", {}, pv.relatives_label),
-      h("dt", {}, "Agents"), h("dd", {}, pv.agents_label + ". They never see genotypes."),
-      h("dt", {}, "Storage"), h("dd", {}, pv.encryption))));
+      h("dt", {}, "Agents"), h("dd", {}, pv.agents_label + "; they never see genotypes")),
+    fold("Storage details", h("p", { class: "muted" }, pv.encryption))));
   const chain = verify.ok ? verify.data : null;
   const evd = ev.ok ? ev.data : null;
   const diff = evd && evd.differencing ? evd.differencing.accuracy : null;
@@ -137,8 +135,7 @@ export async function render() {
     state.demo ? card("Does it hold up?", h("a", { href: "#/redteam" }, "Red-team results"), proof) : null));
 
   const roster = state.demo ? DEMO_ROSTER : RESEARCH_ROSTER;
-  root.append(card(state.demo ? "Demo workflow components" : "Research workflow components",
-    state.demo ? "Simulated demonstration, not real participant governance" : "Implemented capabilities and their current limits",
-    h("div", { class: "grid g2" }, roster.map(([n, t]) => h("div", {}, h("b", {}, n), h("p", { class: "muted", style: "margin:2px 0 0" }, t))))));
+  root.append(card(state.demo ? "Workflow components" : "Workflow components", state.demo ? "Simulated, not real participant governance" : "What each part does, and its limits",
+    h("ul", { class: "parts" }, roster.map(([n, t]) => h("li", {}, h("b", {}, n), fold("Details", h("p", { class: "muted" }, t)))))));
   return root;
 }

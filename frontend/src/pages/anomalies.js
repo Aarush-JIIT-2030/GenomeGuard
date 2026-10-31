@@ -7,7 +7,7 @@ export async function render() {
   const root = h("div", {});
   root.dataset.title = "Anomalies";
   root.append(h("h1", {}, "Anomaly monitor"),
-    h("p", { class: "lede" }, "Watches each account's query pattern: how fast, how similar, how tightly the cohort is shrinking, and whether two answers could be subtracted to isolate people."));
+    h("p", { class: "lede" }, "Watches each account's query pattern for probing, such as rapid, near-duplicate or subtractable queries."));
   if (!isSteward()) { root.append(notice("warn", "Detector scores would let an attacker tune queries to stay under them, so only stewards can see this view.")); return root; }
   const body = h("div", {});
   root.append(body);

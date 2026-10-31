@@ -10,7 +10,7 @@ export async function render() {
     return root;
   }
   root.append(h("h1", {}, "Federated analysis"),
-    h("p", { class: "lede" }, "This experiment illustrates how sites could combine selected statistics using secret sharing without pooling their input rows. It uses simulated sites and does not represent a hardened multi-organization deployment."));
+    h("p", { class: "lede" }, "Simulated sites combine statistics using secret sharing, without pooling their rows. Not a hardened multi-organization deployment."));
   const res = await api("/federated/demo");
   if (!res.ok) { root.append(notice("err", errorText(res))); return root; }
   const d = res.data, lr = d.logistic_regression, af = d.allele_frequency;

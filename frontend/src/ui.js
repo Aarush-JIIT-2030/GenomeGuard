@@ -235,6 +235,11 @@ export function card(title, aside, ...kids) {
   return h("section", { class: "card" }, title ? h("div", { class: "card-h" }, h("h2", { class: "card-title" }, title), aside ? h("span", {}, aside) : null) : null, kids);
 }
 
+// A quiet disclosure: the detail is one click away instead of always on the page.
+export function fold(summary, ...kids) {
+  return h("details", { class: "fold" }, h("summary", {}, summary), h("div", { class: "fold-body" }, kids));
+}
+
 export function kpi(label, value, sub, tone) {
   return h("div", { class: "kpi" + (tone ? " o-" + tone : "") }, h("div", { class: "l" }, label), h("div", { class: "v" }, String(value)), sub ? h("div", { class: "s" }, sub) : null);
 }

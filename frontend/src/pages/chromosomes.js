@@ -13,7 +13,7 @@ async function renderAssembly(assembly, sample = false) {
   const root = h("div", { class: "stack" });
   root.append(h("section", { class: "card hero" }, h("div", { class: "hero-copy" },
     h("h1", {}, "Chromosome explorer"),
-    h("p", { class: "lede" }, `Browse the ${assembly} human reference chromosomes and see where verified variant records are actually available. Reference coordinates are not genotype data, and an empty chromosome is never treated as analysed.`))));
+    h("p", { class: "lede" }, `${assembly} reference chromosomes and where verified variant records exist. An empty chromosome is never treated as analysed.`))));
 
   const response = sample ? { ok: true, status: 200, data: sampleChromosomes(assembly) } : await loadPublicCatalogue("chromosomes", { assembly });
   const showSample = async () => root.replaceWith(await renderAssembly(assembly, true));
