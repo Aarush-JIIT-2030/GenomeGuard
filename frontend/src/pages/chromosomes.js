@@ -26,7 +26,7 @@ async function renderAssembly(assembly, sample = false) {
     root.append(card("What this page will show", "No simulated records",
       h("ul", {},
         h("li", {}, "Reference assembly and chromosome length from the Genome Reference Consortium."),
-        h("li", {}, "Actual stored variant count and observed coordinate range from Supabase."),
+        h("li", {}, "Actual stored variant count and observed coordinate range from the local database."),
         h("li", {}, "A clear unavailable state until verified variant records and source provenance exist."))));
     return root;
   }
